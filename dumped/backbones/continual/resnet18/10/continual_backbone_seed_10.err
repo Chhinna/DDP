@@ -1,0 +1,5 @@
+/home/gridsan/akyurek/git/rfs-incremental/models/resnet_language.py:534: UserWarning: This overload of nonzero is deprecated:
+	nonzero()
+Consider using one of the following signatures instead:
+	nonzero(*, bool as_tuple) (Triggered internally at  /pytorch/torch/csrc/utils/python_arg_parser.cpp:882.)
+  non_zero_idxs = mask.nonzero()
