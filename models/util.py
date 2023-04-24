@@ -25,7 +25,7 @@ def create_model(name, n_cls, opt, vocab=None, dataset='miniImageNet'):
             raise NotImplementedError('model {} not supported in dataset {}:'.format(name, dataset))
     elif dataset == 'CIFAR-FS' or dataset == 'FC100':
         if name.startswith('resnet') or name.startswith('seresnet'):
-            model = model_dict[name](avg_pool=True, drop_rate=0.1, dropblock_size=2, num_classes=n_cls)
+            model = model_dict[name](avg_pool=True, drop_rate=0.1, dropblock_size=2, num_classes=n_cls, vocab=vocab, opt=opt)
         elif name.startswith('convnet'):
             model = model_dict[name](num_classes=n_cls)
         else:
@@ -56,6 +56,9 @@ def get_embeds(embed_pth, vocab, dim=500):
     
     #with open(embed_pth, "rb") as openfile:
     #    embeds_ = pickle.load(openfile)
+    embed_pth = 'word_embeds/CIFAR-FS_dim300.pkl'
+    """ 
+    
     print(embed_pth)
     with open(embed_pth, "rb") as openfile:
         embeds_ = pickle.load(openfile)
@@ -75,24 +78,30 @@ def get_embeds(embed_pth, vocab, dim=500):
     print(vocab)
     with open(embed_pth, "rb") as openfile:
         embeds_ = pickle.load(openfile)
+    
+    print("::::::::::::::::::::::::::::::::")
+    print(len(embeds_))
     embeds = []
     for (i,token) in enumerate(vocab):
         words = token.split(' ')
-        if len(words) > 1:
-            w = ""
-            for i in range(len(words)):
-                w += words[i] + "_"
-
-            w = w[:-1]
+        if len(words) > 1:    
+            a = embeds_[words[0]]
+            b = embeds_[words[1]]
+            c = (a+b)/2
+            try:
+                embeds.append(embeds_[w])
+            except Exception as e:
+                embeds[i] = np.zeros(300)
 
         else:
             w = words[0]
-        try:
-            embeds.append(embeds_[w])
-        except Exception as e:
-            embeds[i] = np.zeros(300)
+            try:
+                embeds.append(embeds_[w])
+            except Exception as e:
+                embeds[i] = np.zeros(300)
+        
 
         #embeds[i-1] /= len(words)
        
-    return torch.stack([torch.from_numpy(e.values) for e in embeds], 0)
-    """ 
+    return torch.stack([torch.from_numpy(e) for e in embeds], 0)
+    

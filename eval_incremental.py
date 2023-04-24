@@ -23,7 +23,7 @@ from eval.language_eval import few_shot_finetune_incremental_test
 from configs import parse_option_eval
 import gc
 import os
-os.environ['CUDA_VISIBLE_DEVICS'] = '1'
+#os.environ['CUDA_VISIBLE_DEVICS'] = '0'
 
 def main():
 
@@ -119,13 +119,17 @@ def main():
         else:
             n_cls = 60
 
+    print(torch.__version__)
+    print(torch.cuda.is_available())
     # Load model if available, check bias.
     ckpt = torch.load(opt.model_path)
-
+    print(opt.label_pull)
     vocab = None
     # In this scenario we'll need the label embeds saved.
     # Label pull is used interchangeably with semantic subspace reg.
     if opt.label_pull is not None: # label_pull refers to gamma in the paper.
+        print("in this")
+        print(base_test_loader.dataset.label2human)
         vocab_train = [name for name in base_test_loader.dataset.label2human if name != '']
         vocab_val = [name for name in meta_valloader.dataset.label2human if name != '']
         vocab_all = vocab_train + vocab_val # + vocab_test
@@ -142,6 +146,7 @@ def main():
             opt.linear_bias = False
 
     # Load model.
+    print(vocab)
     model = create_model(opt.model, n_cls, opt, vocab=vocab, dataset=opt.dataset)
     print("Loading model...")
     model.load_state_dict(ckpt['model'])

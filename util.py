@@ -54,7 +54,7 @@ def create_and_save_embeds(opt, vocab):
 
     word_embeds = opt.word_embed_path
     dim = opt.word_embed_size
-    embed_pth = "{0}_dim{1}.pickle".format(opt.dataset, dim)
+    embed_pth = "{0}_dim{1}.pkl".format(opt.dataset, dim)
 
     if not os.path.isdir(word_embeds):
         os.makedirs(word_embeds)

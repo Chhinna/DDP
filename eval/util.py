@@ -120,8 +120,12 @@ def get_vocabs(base_loader=None, novel_loader=None, query_ys=None):
     vocab_novel, orig2id = None, None
 
     if novel_loader is not None:
+        print(query_ys)
         novel_ids = np.sort(np.unique(query_ys))
         label2human_novel = novel_loader.dataset.label2human
+        print("Some important shit")
+        print(novel_loader.dataset.label2human)
+        print(novel_ids)
         vocab_novel = [label2human_novel[i] for i in novel_ids]
         orig2id = dict(zip(novel_ids, len(vocab_base) + np.arange(len(novel_ids))))
         vocab_all += vocab_novel

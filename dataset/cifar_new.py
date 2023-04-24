@@ -95,13 +95,36 @@ class CIFAR100(Dataset):
                     
                 # Map labels to be consecutive
                 self.labels = [self.basec_map[e] for e in self.labels]
-        
-        self.main_classes = [    "apple",    "aquarium_fish",    "baby",    "bear",    "beaver",    "bed",    "bee",    "beetle",    "bicycle",    "bottle",    "bowl",    "boy",    "bridge",    "bus",    "butterfly",    "camel",    "can",    "castle",    "caterpillar",    "cattle",    "chair",    "chimpanzee",    "clock",    "cloud",    "cockroach",    "couch",    "crab",    "crocodile",    "cup",    "dinosaur",    "dolphin",    "elephant",    "flatfish",    "forest",    "fox",    "girl",    "hamster",    "house",    "kangaroo",    "keyboard",    "lamp",    "lawn_mower",    "leopard",    "lion",    "lizard",    "lobster",    "man",    "maple_tree",    "motorcycle",    "mountain",    "mouse",    "mushroom",    "oak_tree",    "orange",    "orchid",    "otter",    "palm_tree",    "pear",    "pickup_truck",    "pine_tree",    "plain",    "plate",    "poppy",    "porcupine",    "possum",    "rabbit",    "raccoon",    "ray",    "road",    "rocket",    "rose",    "sea",    "seal",    "shark",    "shrew",    "skunk",    "skyscraper",    "snail",    "snake",    "spider",    "squirrel",    "streetcar",    "sunflower",    "sweet_pepper",    "table",    "tank",    "telephone",    "television",    "tiger",    "tractor",    "train",    "trout",    "tulip",    "turtle",    "wardrobe",    "whale",    "willow_tree",    "wolf",    "woman",    "worm"]
+                self.main_classes = [    "apple",    "aquarium_fish",    "baby",    "bear",    "beaver",    "bed",    "bee",    "beetle",    "bicycle",    "bottle",    "bowl",    "boy",    "bridge",    "bus",    "butterfly",    "camel",    "can",    "castle",    "caterpillar",    "cattle",    "chair",    "chimpanzee",    "clock",    "cloud",    "cockroach",    "couch",    "crab",    "crocodile",    "cup",    "dinosaur",    "dolphin",    "elephant",    "flatfish",    "forest",    "fox",    "girl",    "hamster",    "house",    "kangaroo",    "keyboard",    "lamp",    "lawn_mower",    "leopard",    "lion",    "lizard",    "lobster",    "man",    "maple_tree",    "motorcycle",    "mountain",    "mouse",    "mushroom",    "oak_tree",    "orange",    "orchid",    "otter",    "palm_tree",    "pear",    "pickup_truck",    "pine_tree",    "plain",    "plate",    "poppy",    "porcupine",    "possum",    "rabbit",    "raccoon",    "ray",    "road",    "rocket",    "rose",    "sea",    "seal",    "shark",    "shrew",    "skunk",    "skyscraper",    "snail",    "snake",    "spider",    "squirrel",    "streetcar",    "sunflower",    "sweet_pepper",    "table",    "tank",    "telephone",    "television",    "tiger",    "tractor",    "train",    "trout",    "tulip",    "turtle",    "wardrobe",    "whale",    "willow_tree",    "wolf",    "woman",    "worm"]
 
-        self.label2human = [""]*100
-        for i in self.basec_map:
-            self.label2human[self.basec_map[i]] = " ".join(self.main_classes[i].split('_'))
-            
+                self.label2human = [""]*100
+                print("Printing basec map")
+                print(self.basec_map)
+                for i in self.basec_map:
+                    self.label2human[self.basec_map[i]] = " ".join(self.main_classes[i].split('_'))
+                print(self.label2human)   
+
+            elif split == "val":
+                print("=============going into split val==============")
+                self.main_classes = [    "apple",    "aquarium_fish",    "baby",    "bear",    "beaver",    "bed",    "bee",    "beetle",    "bicycle",    "bottle",    "bowl",    "boy",    "bridge",    "bus",    "butterfly",    "camel",    "can",    "castle",    "caterpillar",    "cattle",    "chair",    "chimpanzee",    "clock",    "cloud",    "cockroach",    "couch",    "crab",    "crocodile",    "cup",    "dinosaur",    "dolphin",    "elephant",    "flatfish",    "forest",    "fox",    "girl",    "hamster",    "house",    "kangaroo",    "keyboard",    "lamp",    "lawn_mower",    "leopard",    "lion",    "lizard",    "lobster",    "man",    "maple_tree",    "motorcycle",    "mountain",    "mouse",    "mushroom",    "oak_tree",    "orange",    "orchid",    "otter",    "palm_tree",    "pear",    "pickup_truck",    "pine_tree",    "plain",    "plate",    "poppy",    "porcupine",    "possum",    "rabbit",    "raccoon",    "ray",    "road",    "rocket",    "rose",    "sea",    "seal",    "shark",    "shrew",    "skunk",    "skyscraper",    "snail",    "snake",    "spider",    "squirrel",    "streetcar",    "sunflower",    "sweet_pepper",    "table",    "tank",    "telephone",    "television",    "tiger",    "tractor",    "train",    "trout",    "tulip",    "turtle",    "wardrobe",    "whale",    "willow_tree",    "wolf",    "woman",    "worm"]
+                val_samples = [i for i, e in enumerate(self.labels) if e in valc]
+                
+                val_samples = np.array(val_samples)
+                self.labels = [self.labels[i] for i in val_samples] 
+                self.imgs = self.imgs[val_samples,:] 
+                print("++++++++++++++Printing valc++++++++++++")
+                print(valc)
+                print(len(self.labels))
+                print(len(self.imgs))
+                # Set the specific cat2label dict for val classes.
+                print(valc)
+                self.label2human = [""]*100
+                for i in valc:
+                    self.label2human[i] = " ".join(self.main_classes[i].split('_'))
+                print(self.label2human)
+        
+        
+        # This has to have all the 100 classes
         self.global_labels = self.labels
 
         # pre-process for contrastive sampling
@@ -162,6 +185,11 @@ class MetaCIFAR100(CIFAR100):
         self.phase = phase
         self.split = split
         self.disjoint_classes = disjoint_classes
+        print("eval_mode")
+        print(self.eval_mode)
+        print(self.n_aug_support_samples)
+        print(self.n_base_aug_support_samples)
+        print(self.n_base_support_samples)
 
         if train_transform is None:
             self.train_transform = transforms.Compose([
@@ -186,17 +214,22 @@ class MetaCIFAR100(CIFAR100):
             self.test_transform = test_transform
 
         self.data = {}
+        print(len(self.imgs))
         for idx in range(self.imgs.shape[0]):
             if self.labels[idx] not in self.data:
                 self.data[self.labels[idx]] = []
             self.data[self.labels[idx]].append(self.imgs[idx])
         self.classes = list(self.data.keys())
-
+        print("====[[[printing classes]]]=======")
+        print(self.classes)
         if self.fix_seed:
             np.random.seed(args.set_seed)
             np.random.shuffle(self.classes)
 
     def __getitem__(self, item):
+        print("using episodes")
+        print(self.use_episodes)
+
         if not self.use_episodes:
             
             if self.split == "train" and self.phase == "train" and self.n_base_support_samples > 0:
@@ -204,10 +237,16 @@ class MetaCIFAR100(CIFAR100):
                     # These samples will be stored in memory for every episode.
                     support_xs = []
                     support_ys = []
+                    print("==================")
+                    print(self.fix_seed)
+                    print(item)
                     if self.fix_seed:
                         np.random.seed(item)
+                    print(self.classes)
+                    print(len(self.classes))
                     cls_sampled = np.random.choice(self.classes, len(self.classes), False)
-                    
+                    print(cls_sampled)
+                    print(cls_sampled.shape)
                     for idx, cls in enumerate(np.sort(cls_sampled)):
                         imgs = np.asarray(self.data[cls]).astype('uint8')
                         support_xs_ids_sampled = np.random.choice(range(imgs.shape[0]),
@@ -217,21 +256,31 @@ class MetaCIFAR100(CIFAR100):
                         support_ys.append([cls] * self.n_base_support_samples)    
                     support_xs, support_ys = np.array(support_xs), np.array(support_ys)
                     num_ways, n_queries_per_way, height, width, channel = support_xs.shape
+                    print("here")
+                    print(num_ways)
+                    print(n_queries_per_way)
+                    print(height)
+                    print(width)
+                    print(channel)
                     support_xs = support_xs.reshape((-1, height, width, channel))
                     if self.n_base_aug_support_samples > 1:
                         support_xs = np.tile(support_xs, (self.n_base_aug_support_samples, 1, 1, 1))
                         support_ys = np.tile(support_ys.reshape((-1, )), (self.n_base_aug_support_samples))
                     support_xs = np.split(support_xs, support_xs.shape[0], axis=0)
+                    print(support_xs[0].shape)
                     support_xs = torch.stack(list(map(lambda x: self.train_transform(x.squeeze()), support_xs)))
 
                     # Dummy query.
                     query_xs = support_xs
                     query_ys = support_ys
             else:
-            
+                print("I was hereeeeeeeee")
                 if self.fix_seed:
                     np.random.seed(item)
-
+                print(self.n_ways)
+                print(self.classes)
+                print(self.classes[:self.n_ways])
+                # Only 5 novel classes should be sampled
                 if self.disjoint_classes:
                     cls_sampled = self.classes[:self.n_ways] # 
                     self.classes = self.classes[self.n_ways:]
@@ -270,73 +319,7 @@ class MetaCIFAR100(CIFAR100):
                 support_xs = torch.stack(list(map(lambda x: self.train_transform(x.squeeze()), support_xs)))
                 query_xs = torch.stack(list(map(lambda x: self.test_transform(x.squeeze()), query_xs)))
             
-        else: # to match XtarNet  
-            if self.split == "train" and self.phase == "train":
-                    assert self.n_base_support_samples > 0
-                    # These samples will be stored in memory for every episode.
-                    support_xs = []
-                    support_ys = []
-                    if self.fix_seed:
-                        np.random.seed(item)
-                    cls_sampled = np.random.choice(self.classes, len(self.classes), False)
-                    
-                    for idx, cls in enumerate(np.sort(cls_sampled)):
-                        imgs = np.asarray(self.data[cls]).astype('uint8')
-                        support_xs_ids_sampled = np.random.choice(range(imgs.shape[0]),
-                                                                  self.n_base_support_samples,
-                                                                  False)
-                        support_xs.append(imgs[support_xs_ids_sampled])
-                        support_ys.append([cls] * self.n_base_support_samples)    
-                    support_xs, support_ys = np.array(support_xs), np.array(support_ys)
-                    num_ways, n_queries_per_way, height, width, channel = support_xs.shape
-                    support_xs = support_xs.reshape((-1, height, width, channel))
-                    if self.n_base_aug_support_samples > 1:
-                        support_xs = np.tile(support_xs, (self.n_base_aug_support_samples, 1, 1, 1))
-                        support_ys = np.tile(support_ys.reshape((-1, )), (self.n_base_aug_support_samples))
-                    support_xs = np.split(support_xs, support_xs.shape[0], axis=0)
-                    support_xs = torch.stack(list(map(lambda x: self.train_transform(x.squeeze()), support_xs)))
-
-                    # Dummy query.
-                    query_xs = support_xs
-                    query_ys = support_ys
-                    
-            else:
-     
-                # Actual query.
-                query_xs_ids = self.episode_query_ids[item]
-                query_xs = np.array(self.imgs[query_xs_ids])
-                query_ys = np.array([self.labels[i] for i in query_xs_ids])
-                _, height, width, channel = query_xs.shape
-                num_ways, n_queries_per_way = (self.n_ways, len(query_xs_ids) // self.n_ways)
-
-                query_xs = query_xs.reshape((num_ways * n_queries_per_way, height, width, channel))
-                query_ys = query_ys.reshape((num_ways * n_queries_per_way, ))
-                query_xs = query_xs.reshape((-1, height, width, channel))
-                query_xs = np.split(query_xs, query_xs.shape[0], axis=0)
-                query_xs = torch.stack(list(map(lambda x: self.test_transform(x.squeeze()), query_xs)))
-            
-            
-                if self.split == "train" and self.phase in ["val", "test"] :
-                    # Dummy support if phase is val or test.
-                    support_xs = query_xs.squeeze(0)
-                    support_ys = query_ys
-                
-                else:
-                    # Actual support.
-                    support_xs_ids_sampled = self.episode_support_ids[item]
-                    support_xs = np.array(self.imgs[support_xs_ids_sampled])
-
-                    support_ys = np.array([self.labels[i] for i in support_xs_ids_sampled])
-                    assert len(np.unique(support_ys)) == self.n_ways
-
-                    support_xs = support_xs.reshape((-1, height, width, channel))
-                    if self.n_aug_support_samples > 1:
-                        support_xs = np.tile(support_xs, (self.n_aug_support_samples, 1, 1, 1))
-                        support_ys = np.tile(support_ys.reshape((-1, )), (self.n_aug_support_samples))
-                    support_xs = np.split(support_xs, support_xs.shape[0], axis=0)
-                    support_xs = torch.stack(list(map(lambda x: self.train_transform(x.squeeze()), support_xs)))
-                
-
+        
         return support_xs.float(), support_ys, query_xs.float(), query_ys
         
     def __len__(self):

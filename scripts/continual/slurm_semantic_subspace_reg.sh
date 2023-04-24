@@ -80,7 +80,7 @@ do
 for seed in 8
 do
 BACKBONE_PATH="${DUMPED_PATH}/backbones/continual/resnet18/1/resnet18_cfn${seed}.pth"
-CUDA_VISIBLE_DEVICES=2 /nfs4/anurag/ddpac/bin/python eval_incremental.py --model_path $BACKBONE_PATH \
+/nfs4/anurag/ddpac/bin/python eval_incremental.py --model_path $BACKBONE_PATH \
                         --model resnet18 \
                         --no_dropblock \
                         --data_root $DATA_PATH \
@@ -102,7 +102,7 @@ CUDA_VISIBLE_DEVICES=2 /nfs4/anurag/ddpac/bin/python eval_incremental.py --model
                         --glove \
                         --temperature 3.0 \
                         --weight_decay 5e-4 \
-                        --n_base_support_samples 1
+                        --n_base_support_samples 0
 done
 done
 done

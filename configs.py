@@ -16,7 +16,7 @@ def parse_option_eval():
     # dataset
     parser.add_argument('--dataset', type=str, default='CIFAR-FS', choices=['miniImageNet', 'tieredImageNet',
                                                                                 'CIFAR-FS', 'FC100'])
-    parser.add_argument('--transform', type=str, default='A', choices=transforms_list)
+    parser.add_argument('--transform', type=str, default='D', choices=transforms_list)
 
     # specify data_root
     parser.add_argument('--data_root', type=str, default='', help='path to data root')
@@ -59,7 +59,7 @@ def parse_option_eval():
     parser.add_argument('--use_synonyms', action='store_true', help='Use synonyms.') 
     parser.add_argument("--neval_episodes", type=int, default=2000,
                         help="Number of evaluation episodes both for base and novel.")
-    parser.add_argument('--word_embed_size', type=int, default=500,
+    parser.add_argument('--word_embed_size', type=int, default=300,
                         help='Word embedding classifier')
     parser.add_argument('--word_embed_path', type=str, default="word_embeds",
                         help='Where to store word embeds pickles for dataset.')
@@ -139,7 +139,7 @@ def parse_option_supervised():
     parser.add_argument('--model', type=str, default='resnet12', choices=model_pool)
     parser.add_argument('--dataset', type=str, default='CIFAR-FS', choices=['miniImageNet', 'tieredImageNet',
                                                                                 'CIFAR-FS', 'FC100'])
-    parser.add_argument('--transform', type=str, default='A', choices=transforms_list)
+    parser.add_argument('--transform', type=str, default='D', choices=transforms_list)
     parser.add_argument('--use_trainval', action='store_true', help='use trainval set')
 
     # cosine annealing
@@ -179,7 +179,7 @@ def parse_option_supervised():
     parser.add_argument('--eval_mode', type=str, default=None)
     parser.add_argument('--label_pull', type=float, default=None)
     if parser.parse_known_args()[0].label_pull is not None:
-        parser.add_argument('--word_embed_size', type=int, default=500,
+        parser.add_argument('--word_embed_size', type=int, default=300,
                             help='Word embedding classifier')
         parser.add_argument('--word_embed_path', type=str, default="word_embeds",
                             help='Where to store word embeds pickles for dataset.')

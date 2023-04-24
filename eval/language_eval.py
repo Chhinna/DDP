@@ -161,6 +161,8 @@ def few_shot_finetune_incremental_test(net,
         vocab_base, vocab_all, vocab_novel, orig2id = out_vocabs
         print("Vocab base: ", vocab_base)
         print("Vocab novel: ", vocab_novel)
+        print("Vocab all: ", vocab_all)
+        print("orig2id: ", orig2id)
 
         if idx == 0:
             orig_base_num = len(vocab_base)
