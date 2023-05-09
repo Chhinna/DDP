@@ -89,8 +89,9 @@ def get_embeds(embed_pth, vocab, dim=500):
             b = embeds_[words[1]]
             c = (a+b)/2
             try:
-                embeds.append(embeds_[w])
+                embeds.append(c)
             except Exception as e:
+
                 embeds[i] = np.zeros(300)
 
         else:
@@ -98,6 +99,7 @@ def get_embeds(embed_pth, vocab, dim=500):
             try:
                 embeds.append(embeds_[w])
             except Exception as e:
+
                 embeds[i] = np.zeros(300)
         
 

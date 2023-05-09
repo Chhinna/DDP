@@ -460,15 +460,15 @@ def few_shot_finetune_incremental_test(net,
     if opt.track_weights:
         track_weights.to_csv(f"track_weights_{opt.eval_mode}_pulling_{opt.pulling}_{opt.label_pull}_target_loss_{opt.target_train_loss}_synonyms_{opt.use_synonyms}.csv", index=False)
     file1 = open("logs.txt", "a")
-    file1.write(opt.set_seed)
+    file1.write(str(opt.set_seed))
     file1.write("#")
-    file1.write(opt.learning_rate)
+    file1.write(str(opt.learning_rate))
     file1.write("#")
-    file1.write(lmbd_reg_novel)
+    file1.write(str(lmbd_reg_novel))
     file1.write("#")
-    file1.write(lmbd_reg_transform_w)
+    file1.write(str(lmbd_reg_transform_w))
     file1.write("#")
-    file1.writelines(weighted_avg_l)
+    file1.writelines(str(weighted_avg_l))
     file1.close()
     if vis:
         return df
