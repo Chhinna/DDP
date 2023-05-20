@@ -135,7 +135,12 @@ def get_vocabs(base_loader=None, novel_loader=None, query_ys=None):
 def drop_a_dim(data): #TODO why do we need this in the first place?
     support_xs, support_ys, query_xs, query_ys = data
     batch_size, _, height, width, channel = support_xs.size()
+    print(support_xs.shape)
+    print(type(support_xs))
     support_xs = support_xs.view(-1, height, width, channel)
+    print(query_xs.shape)
+    print(type(query_xs))
+    
     query_xs = query_xs.view(-1, height, width, channel)
     support_ys = support_ys.view(-1).detach().numpy() # TODO
     query_ys = query_ys.view(-1).detach().numpy()

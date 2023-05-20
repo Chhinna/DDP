@@ -26,6 +26,7 @@ from dataset.mini_imagenet import ImageNet, MetaImageNet
 from dataset.tiered_imagenet import TieredImageNet, MetaTieredImageNet
 from dataset.transform_cfg import transforms_options, transforms_list
 from dataset.cifar_new import CIFAR100
+from dataset.cub_new import Cub200
 
 from util import adjust_learning_rate, create_and_save_embeds, create_and_save_descriptions
 from eval.util import accuracy, AverageMeter, validate
@@ -47,11 +48,11 @@ def main():
     # Set seeds
     torch.manual_seed(opt.set_seed)
     np.random.seed(opt.set_seed)
-    clip_vectors = pd.read_csv("CIFAR_CLIP_Underscored_BASE.csv", header=None)
+    clip_vectors = pd.read_csv("CUB200_CLIP_Underscored_BASE.csv", header=None)
     
     new_norm_clip_vectors = []
     
-    relation_csv = pd.read_csv('CIFAR_CLIP_Underscored_K5.csv', header=None)
+    relation_csv = pd.read_csv('CUB200_CLIP_Underscored_K5.csv', header=None)
     relations = []
     for i in range(relation_csv.shape[0]):
         temp_list = []
@@ -268,6 +269,17 @@ def main():
             n_cls = 448
         else:
             n_cls = 351
+
+    elif opt.dataset == 'CUB_200_2011':
+        train_trans, test_trans = transforms_options[opt.transform]
+        train_loader = DataLoader(Cub200(args=opt, split="train", phase="train", transform=train_trans),
+                                  batch_size=opt.batch_size, shuffle=True, drop_last=True,
+                                  num_workers=opt.num_workers)
+        val_loader = DataLoader(Cub200(args=opt, split="train", phase="val", transform=test_trans),
+                                batch_size=opt.batch_size // 2, shuffle=False, drop_last=False,
+                                num_workers=opt.num_workers // 2)
+        
+        n_cls = 100
 
     else:
         train_trans, test_trans = transforms_options[opt.transform]

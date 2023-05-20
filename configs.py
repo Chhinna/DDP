@@ -14,7 +14,7 @@ def parse_option_eval():
     parser.add_argument('--model_path', type=str, default=None, help='absolute path to .pth model')
 
     # dataset
-    parser.add_argument('--dataset', type=str, default='CIFAR-FS', choices=['miniImageNet', 'tieredImageNet',
+    parser.add_argument('--dataset', type=str, default='CUB_200_2011', choices=['miniImageNet', 'tieredImageNet',
                                                                                 'CIFAR-FS', 'FC100'])
     parser.add_argument('--transform', type=str, default='D', choices=transforms_list)
 
@@ -24,7 +24,7 @@ def parse_option_eval():
     # meta setting
     parser.add_argument('--n_test_runs', type=int, default=2000, metavar='N',
                         help='Number of test runs')
-    parser.add_argument('--n_ways', type=int, default=5, metavar='N',
+    parser.add_argument('--n_ways', type=int, default=10, metavar='N',
                         help='Number of classes for doing each classification run')
     parser.add_argument('--n_shots', type=int, default=1, metavar='N',
                         help='Number of shots in test')
@@ -137,7 +137,7 @@ def parse_option_supervised():
 
     # dataset
     parser.add_argument('--model', type=str, default='resnet12', choices=model_pool)
-    parser.add_argument('--dataset', type=str, default='CIFAR-FS', choices=['miniImageNet', 'tieredImageNet',
+    parser.add_argument('--dataset', type=str, default='CUB_200_2011', choices=['miniImageNet', 'tieredImageNet',
                                                                                 'CIFAR-FS', 'FC100'])
     parser.add_argument('--transform', type=str, default='D', choices=transforms_list)
     parser.add_argument('--use_trainval', action='store_true', help='use trainval set')
@@ -154,7 +154,7 @@ def parse_option_supervised():
     # meta setting
     parser.add_argument('--n_test_runs', type=int, default=600, metavar='N',
                         help='Number of test runs')
-    parser.add_argument('--n_ways', type=int, default=5, metavar='N',
+    parser.add_argument('--n_ways', type=int, default=10, metavar='N',
                         help='Number of classes for doing each classification run')
     parser.add_argument('--n_shots', type=int, default=1, metavar='N',
                         help='Number of shots in test')
@@ -188,7 +188,7 @@ def parse_option_supervised():
                             help='Use of Glove embeds instead of Vico.')
     opt = parser.parse_args()
 
-    if opt.dataset == 'CIFAR-FS' or opt.dataset == 'FC100':
+    if opt.dataset == 'CUB_200_2011' or opt.dataset == 'FC100':
         opt.transform = 'D'
 
     if opt.use_trainval:

@@ -17,6 +17,7 @@ from models.util import create_model
 from dataset.mini_imagenet import MetaImageNet, ImageNet
 from dataset.transform_cfg import transforms_test_options
 from dataset.cifar_new import CIFAR100, MetaCIFAR100
+from dataset.cub_new import Cub200, MetaCub200
 
 from util import create_and_save_embeds
 from eval.language_eval import few_shot_finetune_incremental_test
@@ -83,13 +84,14 @@ def main():
             n_cls = 80
         else:
             n_cls = 60
-    else:
+
+    elif opt.dataset == 'CUB_200_2011':
         train_trans, test_trans = transforms_test_options[opt.transform]
 
         # Base test samples loader. "split=train" refers to the base set of classes
         # "phase=test" means we are interested in those samples that were not used in
         # training.
-        base_test_loader = DataLoader(CIFAR100(args=opt, split='train', phase='test', transform=test_trans),
+        base_test_loader = DataLoader(Cub200(args=opt, split='train', phase='test', transform=test_trans),
                                       batch_size=opt.test_base_batch_size // 2,
                                       shuffle=False,
                                       drop_last=False,
@@ -99,7 +101,7 @@ def main():
         base_support_loader = None
         if opt.n_base_support_samples > 0:
             ''' We'll use support samples from base classes. '''
-            base_support_loader = DataLoader(MetaCIFAR100(args=opt, split='train', phase='train',
+            base_support_loader = DataLoader(MetaCub200(args=opt, split='train', phase='train',
                                                   train_transform=train_trans,
                                                   test_transform=test_trans,
                                                   fix_seed=True, use_episodes=False),
@@ -108,7 +110,7 @@ def main():
 
         # Test samples from novel classes as they are introduced.
         # split=val means we are interested in novel classes.
-        meta_valloader = DataLoader(MetaCIFAR100(args=opt, split='val',
+        meta_valloader = DataLoader(MetaCub200(args=opt, split='val',
                                                  train_transform=train_trans,
                                                  test_transform=test_trans,
                                                  fix_seed=True, use_episodes=opt.use_episodes, disjoint_classes=True),
@@ -117,7 +119,43 @@ def main():
         if opt.use_trainval:
             n_cls = 80
         else:
-            n_cls = 60
+            n_cls = 100
+
+    else:
+        train_trans, test_trans = transforms_test_options[opt.transform]
+
+        # Base test samples loader. "split=train" refers to the base set of classes
+        # "phase=test" means we are interested in those samples that were not used in
+        # training.
+        base_test_loader = DataLoader(Cub200(args=opt, split='train', phase='test', transform=test_trans),
+                                      batch_size=opt.test_base_batch_size // 2,
+                                      shuffle=False,
+                                      drop_last=False,
+                                      num_workers=opt.num_workers // 2)
+
+        # In case we are storing memory from base classes.
+        base_support_loader = None
+        if opt.n_base_support_samples > 0:
+            ''' We'll use support samples from base classes. '''
+            base_support_loader = DataLoader(MetaCub200(args=opt, split='train', phase='train',
+                                                  train_transform=train_trans,
+                                                  test_transform=test_trans,
+                                                  fix_seed=True, use_episodes=False),
+                                     batch_size=opt.test_batch_size, shuffle=True, drop_last=False, # False?
+                                     num_workers=opt.num_workers)
+
+        # Test samples from novel classes as they are introduced.
+        # split=val means we are interested in novel classes.
+        meta_valloader = DataLoader(MetaCub200(args=opt, split='val',
+                                                 train_transform=train_trans,
+                                                 test_transform=test_trans,
+                                                 fix_seed=True, use_episodes=opt.use_episodes, disjoint_classes=True),
+                                    batch_size=opt.test_batch_size, shuffle=False, drop_last=False,
+                                    num_workers=opt.num_workers)
+        if opt.use_trainval:
+            n_cls = 80
+        else:
+            n_cls = 100
 
     print(torch.__version__)
     print(torch.cuda.is_available())

@@ -23,7 +23,7 @@ def create_model(name, n_cls, opt, vocab=None, dataset='miniImageNet'):
             model = model_dict[name](num_classes=n_cls)
         else:
             raise NotImplementedError('model {} not supported in dataset {}:'.format(name, dataset))
-    elif dataset == 'CIFAR-FS' or dataset == 'FC100':
+    elif dataset == 'CIFAR-FS' or dataset == 'FC100' or dataset == 'CUB_200_2011':
         if name.startswith('resnet') or name.startswith('seresnet'):
             model = model_dict[name](avg_pool=True, drop_rate=0.1, dropblock_size=2, num_classes=n_cls, vocab=vocab, opt=opt)
         elif name.startswith('convnet'):
@@ -56,7 +56,7 @@ def get_embeds(embed_pth, vocab, dim=500):
     
     #with open(embed_pth, "rb") as openfile:
     #    embeds_ = pickle.load(openfile)
-    embed_pth = 'word_embeds/CIFAR-FS_dim300.pkl'
+    embed_pth = 'word_embeds/CUB_200_2011_dim300.pkl'
     """ 
     
     print(embed_pth)
@@ -84,18 +84,35 @@ def get_embeds(embed_pth, vocab, dim=500):
     embeds = []
     for (i,token) in enumerate(vocab):
         words = token.split(' ')
-        if len(words) > 1:    
-            a = embeds_[words[0]]
-            b = embeds_[words[1]]
-            c = (a+b)/2
+        if len(words) > 1:  
+            iterHere = 0
+            for w in words:
+                w = w.lower()
+                if iterHere == 0:
+                    final = embeds_[w]
+                    iterHere += 1
+                else:
+                    final += embeds_[w]
+            
+            final = final / len(words)
             try:
-                embeds.append(c)
+                embeds.append(final)
             except Exception as e:
-
+                print(e)
                 embeds[i] = np.zeros(300)
+
+            # a = embeds_[words[0]]
+            # b = embeds_[words[1]]
+            # c = (a+b)/2
+            # try:
+            #     embeds.append(c)
+            # except Exception as e:
+
+            #     embeds[i] = np.zeros(300)
 
         else:
             w = words[0]
+            w = w.lower()
             try:
                 embeds.append(embeds_[w])
             except Exception as e:

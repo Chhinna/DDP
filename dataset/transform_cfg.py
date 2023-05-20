@@ -25,6 +25,7 @@ transform_A = [
         lambda x: Image.fromarray(x),
         lambda x: np.array(x),
         transforms.ToTensor(),
+        transforms.RandomCrop(84, padding=8),
         normalize
     ])
 ]
@@ -42,6 +43,7 @@ transform_A_test = [
     transforms.Compose([
         lambda x: Image.fromarray(x),
         transforms.ToTensor(),
+        transforms.RandomCrop(84, padding=8),
         normalize
     ])
 ]
@@ -53,7 +55,7 @@ normalize_cifar100 = transforms.Normalize(mean=mean, std=std)
 transform_D = [
     transforms.Compose([
         lambda x: Image.fromarray(x),
-        transforms.RandomCrop(32, padding=4),
+        transforms.RandomCrop(84, padding=8),
         transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
         transforms.RandomHorizontalFlip(),
         lambda x: np.array(x),
@@ -64,6 +66,7 @@ transform_D = [
     transforms.Compose([
         lambda x: Image.fromarray(x),
         transforms.ToTensor(),
+        transforms.RandomCrop(84, padding=8),
         normalize_cifar100
     ])
 ]
@@ -71,7 +74,7 @@ transform_D = [
 transform_D_test = [
     transforms.Compose([
         lambda x: Image.fromarray(x),
-        transforms.RandomCrop(32, padding=4),
+        transforms.RandomCrop(84, padding=8),
         transforms.RandomHorizontalFlip(),
         lambda x: np.array(x),
         transforms.ToTensor(),
@@ -80,6 +83,7 @@ transform_D_test = [
 
     transforms.Compose([
         lambda x: Image.fromarray(x),
+        transforms.RandomCrop(84, padding=8),
         transforms.ToTensor(),
         normalize_cifar100
     ])

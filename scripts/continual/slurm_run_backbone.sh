@@ -55,5 +55,5 @@ BACKBONE_FOLDER=${DUMPED_PATH}/backbones/continual/resnet18
                                 --no_dropblock \
                                 --save_freq 100 \
                                 --no_linear_bias \
-                                --set_seed 10
+                                --set_seed 1
                                 

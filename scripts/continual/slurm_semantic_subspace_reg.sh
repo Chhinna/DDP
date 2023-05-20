@@ -77,9 +77,9 @@ for lmbdn in 0.1
 do
 for lmbdw in 0.5
 do
-for seed in 10
+for seed in 1
 do
-BACKBONE_PATH="${DUMPED_PATH}/backbones/continual/resnet18/1/resnet18_cfn${seed}.pth"
+BACKBONE_PATH="${DUMPED_PATH}/backbones/continual/resnet18/1/resnet18_cubn${seed}.pth"
 /nfs4/anurag/ddpac/bin/python eval_incremental.py --model_path $BACKBONE_PATH \
                         --model resnet18 \
                         --no_dropblock \
