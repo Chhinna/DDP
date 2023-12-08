@@ -86,10 +86,12 @@ class LangPuller(nn.Module):
                 inspired = self.mapping_model(self.novel_embeds)
             return inspired
 
-    def loss1(self, pull, inspired, weights):
+    @staticmethod
+    def loss1(pull, inspired, weights):
         return pull * torch.norm(inspired - weights)**2
 
-    def get_projected_weight(self, base_weight, weights):
+    @staticmethod
+    def get_projected_weight(base_weight, weights):
         tr = torch.transpose(base_weight, 0, 1)
         Q, R = torch.qr(tr, some=True) # Q is 640x60
         mut = weights @ Q # mut is 5 x 60
