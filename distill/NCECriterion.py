@@ -7,10 +7,30 @@ eps = 1e-7
 class NCECriterion(nn.Module):
 
     def __init__(self, nLem):
+        """
+        Initialize NCECriterion class
+        Args:
+            nLem: Number of lemmas
+        Returns: 
+            None: Does not return anything
+        - Call parent class __init__ method
+        - Set number of lemmas attribute nLem"""
         super(NCECriterion, self).__init__()
         self.nLem = nLem
 
     def forward(self, x):
+        """
+        Calculates the loss for a forward pass through the model.
+        Args: 
+            x: Input tensor of shape (batchSize, K+1): Input data 
+        Returns:
+            loss: Scalar tensor containing the loss
+        Processing Logic:
+            1. Calculate probabilities P(origin=model) and P(origin=noise) for each sample
+            2. Take the log of the probabilities
+            3. Sum the log probabilities across samples
+            4. Return the negative average loss
+        """
         batchSize = x.size(0)
         K = x.size(1) - 1
         Pnt = 1 / float(self.nLem)

@@ -8,6 +8,18 @@ import subprocess
 
 
 def parse_option_eval():
+    """Parses command line arguments for few-shot learning evaluation.
+    Args: 
+        parser: ArgumentParser object to add arguments
+    Returns: 
+        opt: Namepsace containing argument values
+    Parses command line arguments:
+        - Loads pretrained model
+        - Specifies dataset and data transformations
+        - Sets meta-learning parameters like ways, shots etc. 
+        - Sets optimization parameters like learning rate, weight decay
+        - Specifies directories and file paths
+    """
     parser = argparse.ArgumentParser('argument for training')
     # load pretrained model
     parser.add_argument('--model', type=str, default='resnet12', choices=model_pool)
@@ -115,6 +127,18 @@ def parse_option_eval():
 
 def parse_option_supervised():
 
+    """Parses command line arguments for training supervised models
+    Args: 
+        parser: ArgumentParser - Parser for command line arguments
+    Returns: 
+        opt: Namespace - Namespace containing parsed arguments
+    Processing Logic:
+        - Adds arguments for training hyperparameters like learning rate, batch size etc
+        - Adds arguments for dataset, model, optimizer related parameters
+        - Sets default paths for model saving and tensorboard logging
+        - Splits epochs for learning rate decay into a list
+        - Prints all arguments
+    """
     parser = argparse.ArgumentParser('argument for training')
 
     parser.add_argument('--eval_freq', type=int, default=10, help='meta-eval frequency')

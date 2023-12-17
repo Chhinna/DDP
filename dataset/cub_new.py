@@ -12,6 +12,19 @@ from torch.utils.data import Dataset
 class Cub200(Dataset):
     def __init__(self, args, split='train', phase=None, is_sample=False, k=4096,
         transform=None):
+        """Initializes the dataset by loading images and preprocessing them.
+        
+        Args: 
+            args: Namespace of arguments containing data path and preprocessing options
+        Returns:
+            None: Initializes attributes of the Dataset object
+        Processing Logic:
+            - Loads images from folders and resizes them to fixed size
+            - Normalizes images based on mean and std
+            - Optionally applies data augmentation on train split
+            - Stores images and labels in attributes
+            - Optionally samples positive and negative pairs for contrastive learning
+        """
         super(Dataset, self).__init__()
         self.data_root = args.data_root
         self.split = split
@@ -198,6 +211,21 @@ class Cub200(Dataset):
             self.cls_negative = np.asarray(self.cls_negative)
 
     def __getitem__(self, item):
+        """
+        Get item from dataset at index.
+        Args:
+            item: Index of item to retrieve. 
+        Returns:
+            img: Image at index as tensor.
+            target: Label of image as integer. 
+            item: Index of retrieved item.
+        Processing Logic:
+            - Retrieve image and label at given index from dataset
+            - Transform image using dataset transform
+            - Normalize label by subtracting minimum label value
+            - Return image, label and index
+            - Optionally also return positive and negative samples
+        """
         img = np.asarray(self.imgs[item]).astype('uint8')
         img = self.transform(img)
         target = self.labels[item] - min(self.labels)
@@ -211,11 +239,34 @@ class Cub200(Dataset):
             return img, target, item, sample_idx
 
     def __len__(self):
+        """
+        Returns the length (number of items) of the object.
+        Args:
+            self: The object.
+        Returns:
+            len: The length (number of items) of the object.
+        - Calls len() on the labels attribute of the object.
+        - len() returns the length (number of items) of the labels list/collection.
+        - This length is returned by the __len__() method."""
         return len(self.labels)
 
 class MetaCub200(Cub200):
 
     def __init__(self, args, split, phase=None, train_transform=None, test_transform=None, fix_seed=True, use_episodes = False, disjoint_classes=False):
+        """Initializes the MetaCub200 dataset
+        Args: 
+            args: Contains hyperparameters like n_ways, n_shots etc
+            split: train/val/test split
+            phase: train/val/test phase
+            train_transform: Transformations for train data
+            test_transform: Transformations for test data
+        Returns: 
+            self: MetaCub200 dataset object
+        Processing Logic:
+            1. Initialize hyperparameters like n_ways, n_shots etc from args
+            2. Apply train and test transformations 
+            3. Organize data into classes and shuffle class order
+            4. Set random seed if fix_seed is True"""
         super(MetaCub200, self).__init__(args, split, phase)
         self.fix_seed = fix_seed
         self.n_ways = args.n_ways
@@ -277,6 +328,20 @@ class MetaCub200(Cub200):
             np.random.shuffle(self.classes)
 
     def __getitem__(self, item):
+        """
+        Generate episode for few-shot learning
+        Args: 
+            item: Episode index
+        Returns: 
+            support_xs: Support set images
+            support_ys: Support set labels 
+            query_xs: Query set images
+            query_ys: Query set labels
+        Processing Logic:
+            - Sample support and query sets from dataset 
+            - Apply data augmentation and normalization
+            - Return support and query sets
+        """
         print("using episodes")
         print(self.use_episodes)
 
@@ -373,6 +438,17 @@ class MetaCub200(Cub200):
         return support_xs.float(), support_ys, query_xs.float(), query_ys
         
     def __len__(self):
+        """
+        Returns the length of the dataset
+        Args:
+            self: The dataset object
+        Returns:
+            length: The length of the dataset
+        - Checks if split is train and phase is train
+        - If disjoint_classes is True, returns 8
+        - Else returns n_test_runs
+        - Else if use_episodes is True, returns length of episode_query_ids 
+        - Else returns n_test_runs"""
         if (self.split == "train" and self.phase == "train"):
             if self.disjoint_classes:
                 return 8
