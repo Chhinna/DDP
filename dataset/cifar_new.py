@@ -189,12 +189,11 @@ class CIFAR100(Dataset):
         target = self.labels[item] - min(self.labels)
         if not self.is_sample:
             return img, target, item
-        else:
-            pos_idx = item
-            replace = True if self.k > len(self.cls_negative[target]) else False
-            neg_idx = np.random.choice(self.cls_negative[target], self.k, replace=replace)
-            sample_idx = np.hstack((np.asarray([pos_idx]), neg_idx))
-            return img, target, item, sample_idx
+        pos_idx = item
+        replace = True if self.k > len(self.cls_negative[target]) else False
+        neg_idx = np.random.choice(self.cls_negative[target], self.k, replace=replace)
+        sample_idx = np.hstack((np.asarray([pos_idx]), neg_idx))
+        return img, target, item, sample_idx
 
     def __len__(self):
         """
@@ -340,7 +339,7 @@ class MetaCIFAR100(CIFAR100):
                         support_ys = np.tile(support_ys.reshape((-1, )), (self.n_base_aug_support_samples))
                     support_xs = np.split(support_xs, support_xs.shape[0], axis=0)
                     print(support_xs[0].shape)
-                    support_xs = torch.stack(list(map(lambda x: self.train_transform(x.squeeze()), support_xs)))
+                    support_xs = torch.stack([self.train_transform(x.squeeze()) for x in support_xs])
 
                     # Dummy query.
                     query_xs = support_xs
@@ -367,7 +366,7 @@ class MetaCIFAR100(CIFAR100):
                     support_xs_ids_sampled = np.random.choice(range(imgs.shape[0]), self.n_shots, False)
                     support_xs.append(imgs[support_xs_ids_sampled])
                     lbl = idx
-                    if self.eval_mode in ["few-shot-incremental-fine-tune"]:
+                    if self.eval_mode in {"few-shot-incremental-fine-tune"}:
                         lbl = cls
                     support_ys.append([lbl] * self.n_shots) #
                     query_xs_ids = np.setxor1d(np.arange(imgs.shape[0]), support_xs_ids_sampled)
@@ -388,8 +387,8 @@ class MetaCIFAR100(CIFAR100):
                 query_xs = query_xs.reshape((-1, height, width, channel))
                 query_xs = np.split(query_xs, query_xs.shape[0], axis=0)
 
-                support_xs = torch.stack(list(map(lambda x: self.train_transform(x.squeeze()), support_xs)))
-                query_xs = torch.stack(list(map(lambda x: self.test_transform(x.squeeze()), query_xs)))
+                support_xs = torch.stack([self.train_transform(x.squeeze()) for x in support_xs])
+                query_xs = torch.stack([self.test_transform(x.squeeze()) for x in query_xs])
             
         
         return support_xs.float(), support_ys, query_xs.float(), query_ys
@@ -408,8 +407,7 @@ class MetaCIFAR100(CIFAR100):
             if self.disjoint_classes:
                 return 8
             return self.n_test_runs
-        elif self.use_episodes:
+        if self.use_episodes:
             return len(self.episode_query_ids)
-        else:
-            return self.n_test_runs
+        return self.n_test_runs
 

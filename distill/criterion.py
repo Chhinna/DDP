@@ -7,8 +7,8 @@ import torch.nn.functional as F
 import numpy as np
 from scipy.stats import norm
 
-from .NCEAverage import NCEAverage
-from .NCEAverage import NCESoftmax
+from .NCEAverage import NCEAverage, NCESoftmax
+
 from .NCECriterion import NCECriterion
 
 
@@ -21,8 +21,7 @@ class DistillKL(nn.Module):
     def forward(self, y_s, y_t):
         p_s = F.log_softmax(y_s/self.T, dim=1)
         p_t = F.softmax(y_t/self.T, dim=1)
-        loss = F.kl_div(p_s, p_t, size_average=False) * (self.T**2) / y_s.shape[0]
-        return loss
+        return F.kl_div(p_s, p_t, size_average=False) * self.T ** 2 / y_s.shape[0]
 
 
 class NCELoss(nn.Module):
@@ -37,8 +36,7 @@ class NCELoss(nn.Module):
         out_s, out_t = self.contrast(f_s, f_t, idx, contrast_idx)
         s_loss = self.criterion_s(out_s)
         t_loss = self.criterion_t(out_t)
-        loss = s_loss + t_loss
-        return loss
+        return s_loss + t_loss
 
 
 class NCESoftmaxLoss(nn.Module):
@@ -55,8 +53,7 @@ class NCESoftmaxLoss(nn.Module):
         label = torch.zeros([bsz, 1]).cuda().long()
         s_loss = self.criterion_s(out_s, label)
         t_loss = self.criterion_t(out_t, label)
-        loss = s_loss + t_loss
-        return loss
+        return s_loss + t_loss
 
 
 class Attention(nn.Module):
@@ -89,8 +86,7 @@ class HintLoss(nn.Module):
         self.crit = nn.MSELoss()
 
     def forward(self, f_s, f_t):
-        loss = self.crit(f_s, f_t)
-        return loss
+        return self.crit(f_s, f_t)
 
 
 if __name__ == '__main__':

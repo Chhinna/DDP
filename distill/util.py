@@ -53,8 +53,7 @@ class Normalize(nn.Module):
 
     def forward(self, x):
         norm = x.pow(self.power).sum(1, keepdim=True).pow(1. / self.power)
-        out = x.div(norm)
-        return out
+        return x.div(norm)
 
 
 if __name__ == '__main__':

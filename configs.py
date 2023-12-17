@@ -111,10 +111,7 @@ def parse_option_eval():
 
     opt = parser.parse_args()
 
-    if 'trainval' in opt.model_path:
-        opt.use_trainval = True
-    else:
-        opt.use_trainval = False
+    opt.use_trainval = 'trainval' in opt.model_path
 
     # set the path according to the environment
     if not opt.data_root:
@@ -212,11 +209,11 @@ def parse_option_supervised():
                             help='Use of Glove embeds instead of Vico.')
     opt = parser.parse_args()
 
-    if opt.dataset == 'CUB_200_2011' or opt.dataset == 'FC100':
+    if opt.dataset in {'CUB_200_2011', 'FC100'}:
         opt.transform = 'D'
 
     if opt.use_trainval:
-        opt.trial = opt.trial + '_trainval'
+        opt.trial = f'{opt.trial}_trainval'
 
     # set the path according to the environment
     if not opt.model_path:
@@ -230,9 +227,9 @@ def parse_option_supervised():
     opt.data_aug = True
 
     iterations = opt.lr_decay_epochs.split(',')
-    opt.lr_decay_epochs = list([])
-    for it in iterations:
-        opt.lr_decay_epochs.append(int(it))
+    
+    opt.lr_decay_epochs = [] + [int(it) for it in iterations]
+
 
     opt.linear_bias = not opt.no_linear_bias
     opt.model_name = '{}_{}_classifier_{}'.format(opt.dataset,
@@ -253,13 +250,19 @@ def parse_option_supervised():
     # Print opt
 
     # Add git commit hash
-    process = subprocess.Popen(['git', 'rev-parse', '--short', 'HEAD'], shell=False, stdout=subprocess.PIPE)
-    git_head_hash = process.communicate()[0].strip()
-    opt.git_head_hash = git_head_hash.decode()
+    with subprocess.Popen(['git', 'rev-parse', '--short', 'HEAD'], shell=False, stdout=subprocess.PIPE) as process:
+        git_head_hash = process.communicate()[0].strip()
+        opt.git_head_hash = git_head_hash.decode()
+        print("************* Training arguments *************")
+        for arg in vars(opt):
+            print(arg, getattr(opt, arg))
+        print("End of arguments.\n")
+        return opt
+    
+    
 
-    print("************* Training arguments *************")
-    for arg in vars(opt):
-        print(arg, getattr(opt, arg))
-    print("End of arguments.\n")
+    
+    
+    
 
-    return opt
+    

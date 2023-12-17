@@ -121,11 +121,8 @@ class ImageNet(Dataset):
                 self.labels = [self.basec_map[e] for e in self.labels]
                 
                 # Set the specific cat2label dict for base classes.
-                new_cat2label = {}
-                for k,v in self.cat2label.items():
-                    if v in basec:
-                        new_cat2label[k] = self.basec_map[v]
-                self.cat2label = new_cat2label
+                new_cat2label = {k: self.basec_map[v] for (k, v) in self.cat2label.items() if v in basec}
+                
                 
             
             elif split == "val":
@@ -135,20 +132,19 @@ class ImageNet(Dataset):
                 self.imgs = self.imgs[val_samples,:] 
                 
                 # Set the specific cat2label dict for val classes.
-                new_cat2label = {}
-                for k,v in self.cat2label.items():
-                    if v in valc:
-                        new_cat2label[k] = v
-                self.cat2label = new_cat2label
+                new_cat2label = {k: v for (k, v) in self.cat2label.items() if v in valc}
+                
 
                 
             else:
                 raise ValueError(f"No such split as {split}.")
 
+
+            self.cat2label = new_cat2label
         self.label2human = [""]*100 # Total of 100 classes in mini.
 
         # Labels are available by codes by default. Converting them into human readable labels.
-        with open(os.path.join(args.data_root, 'class_labels.txt'), 'r') as f:
+        with open(os.path.join(args.data_root, 'class_labels.txt'), 'r', encoding='utf-8') as f:
             for line in f.readlines():
                 catname, humanname = line.strip().lower().split(' ')
                 humanname = " ".join(humanname.split('_'))
@@ -201,12 +197,11 @@ class ImageNet(Dataset):
         target = self.labels[item] - min(self.labels)
         if not self.is_sample:
             return img, target, item
-        else:
-            pos_idx = item
-            replace = True if self.k > len(self.cls_negative[target]) else False
-            neg_idx = np.random.choice(self.cls_negative[target], self.k, replace=replace)
-            sample_idx = np.hstack((np.asarray([pos_idx]), neg_idx))
-            return img, target, item, sample_idx
+        pos_idx = item
+        replace = True if self.k > len(self.cls_negative[target]) else False
+        neg_idx = np.random.choice(self.cls_negative[target], self.k, replace=replace)
+        sample_idx = np.hstack((np.asarray([pos_idx]), neg_idx))
+        return img, target, item, sample_idx
 
     def __len__(self):
         """
@@ -275,13 +270,13 @@ class MetaImageNet(ImageNet):
             self.episode_support_ids = []
             self.episode_query_ids = []
 
-            with open(os.path.join(args.data_root, f"episodes_{self.n_ways}_{self.n_shots}.txt"), 'r') as f: # FIX: episodes is only for 5 shot x 5 way experiments
+            with open(os.path.join(args.data_root, f'episodes_{self.n_ways}_{self.n_shots}.txt'), 'r', encoding='utf-8') as f: # FIX: episodes is only for 5 shot x 5 way experiments
                 is_val = True
                 for line in f.readlines():
                     if line.startswith("TEST"):
                         is_val = False
 
-                    if (split=="train" and phase == "val" and is_val) or (split=="train" and phase == "test" and not is_val):
+                    if split == 'train' and (phase == "test" or is_val) and (phase == 'val' or not is_val):
 
                         if line.startswith("Base Query"):
                             arr = re.split(': ', line)[1].rstrip()
@@ -376,7 +371,7 @@ class MetaImageNet(ImageNet):
                         support_xs = np.tile(support_xs, (self.n_base_aug_support_samples, 1, 1, 1))
                         support_ys = np.tile(support_ys.reshape((-1, )), (self.n_base_aug_support_samples))
                     support_xs = np.split(support_xs, support_xs.shape[0], axis=0)
-                    support_xs = torch.stack(list(map(lambda x: self.train_transform(x.squeeze()), support_xs)))
+                    support_xs = torch.stack([self.train_transform(x.squeeze()) for x in support_xs])
 
                     # Dummy query.
                     query_xs = support_xs
@@ -400,7 +395,7 @@ class MetaImageNet(ImageNet):
                     support_xs_ids_sampled = np.random.choice(range(imgs.shape[0]), self.n_shots, False)
                     support_xs.append(imgs[support_xs_ids_sampled])
                     lbl = idx
-                    if self.eval_mode in ["few-shot-incremental-fine-tune"]:
+                    if self.eval_mode in {"few-shot-incremental-fine-tune"}:
                         lbl = cls
                     support_ys.append([lbl] * self.n_shots) #
                     query_xs_ids = np.setxor1d(np.arange(imgs.shape[0]), support_xs_ids_sampled)
@@ -421,8 +416,8 @@ class MetaImageNet(ImageNet):
                 query_xs = query_xs.reshape((-1, height, width, channel))
                 query_xs = np.split(query_xs, query_xs.shape[0], axis=0)
 
-                support_xs = torch.stack(list(map(lambda x: self.train_transform(x.squeeze()), support_xs)))
-                query_xs = torch.stack(list(map(lambda x: self.test_transform(x.squeeze()), query_xs)))
+                support_xs = torch.stack([self.train_transform(x.squeeze()) for x in support_xs])
+                query_xs = torch.stack([self.test_transform(x.squeeze()) for x in query_xs])
             
         else: # to match XtarNet  
             if self.split == "train" and self.phase == "train":
@@ -448,7 +443,7 @@ class MetaImageNet(ImageNet):
                         support_xs = np.tile(support_xs, (self.n_base_aug_support_samples, 1, 1, 1))
                         support_ys = np.tile(support_ys.reshape((-1, )), (self.n_base_aug_support_samples))
                     support_xs = np.split(support_xs, support_xs.shape[0], axis=0)
-                    support_xs = torch.stack(list(map(lambda x: self.train_transform(x.squeeze()), support_xs)))
+                    support_xs = torch.stack([self.train_transform(x.squeeze()) for x in support_xs])
 
                     # Dummy query.
                     query_xs = support_xs
@@ -467,10 +462,10 @@ class MetaImageNet(ImageNet):
                 query_ys = query_ys.reshape((num_ways * n_queries_per_way, ))
                 query_xs = query_xs.reshape((-1, height, width, channel))
                 query_xs = np.split(query_xs, query_xs.shape[0], axis=0)
-                query_xs = torch.stack(list(map(lambda x: self.test_transform(x.squeeze()), query_xs)))
+                query_xs = torch.stack([self.test_transform(x.squeeze()) for x in query_xs])
             
             
-                if self.split == "train" and self.phase in ["val", "test"] :
+                if self.split == "train" and self.phase in {'val', "test"} :
                     # Dummy support if phase is val or test.
                     support_xs = query_xs.squeeze(0)
                     support_ys = query_ys
@@ -488,7 +483,7 @@ class MetaImageNet(ImageNet):
                         support_xs = np.tile(support_xs, (self.n_aug_support_samples, 1, 1, 1))
                         support_ys = np.tile(support_ys.reshape((-1, )), (self.n_aug_support_samples))
                     support_xs = np.split(support_xs, support_xs.shape[0], axis=0)
-                    support_xs = torch.stack(list(map(lambda x: self.train_transform(x.squeeze()), support_xs)))
+                    support_xs = torch.stack([self.train_transform(x.squeeze()) for x in support_xs])
                 
 
         return support_xs.float(), support_ys, query_xs.float(), query_ys
@@ -507,10 +502,9 @@ class MetaImageNet(ImageNet):
             if self.disjoint_classes:
                 return 8
             return self.n_test_runs
-        elif self.use_episodes:
+        if self.use_episodes:
             return len(self.episode_query_ids)
-        else:
-            return self.n_test_runs
+        return self.n_test_runs
             
 
 
