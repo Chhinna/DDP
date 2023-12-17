@@ -14,6 +14,24 @@ class CIFAR100(Dataset):
     """support FC100 and CIFAR-FS"""
     def __init__(self, args, partition='train', pretrain=True, is_sample=False, k=4096,
                  transform=None):
+        """
+        Initializes a dataset
+        Args: 
+            self: The object
+            args: Command line arguments
+            partition: Dataset partition ('train' or 'test')
+            pretrain: Whether to pretrain
+            is_sample: Whether to sample contrastive pairs
+            k: Number of negative pairs per positive
+            transform: Image transformations
+        Returns:
+            None
+        Processes data:
+            - Loads data from pickle file
+            - Normalizes images
+            - Encodes labels
+            - Samples positive/negative pairs if contrastive learning
+        """
         super(Dataset, self).__init__()
         self.data_root = args.data_root
         self.partition = partition
@@ -90,6 +108,20 @@ class CIFAR100(Dataset):
             self.cls_negative = np.asarray(self.cls_negative)
 
     def __getitem__(self, item):
+        """
+        Get item from dataset at index.
+        Args:
+            item: Index of item to retrieve
+        Returns: 
+            img: Image at index as tensor
+            target: Label of image 
+            item: Index
+        Processing Logic:
+            - Get image and target from lists using index
+            - Normalize target by subtracting min label value 
+            - Return image and target
+            - Optionally also return positive and negative samples
+        """
         img = np.asarray(self.imgs[item]).astype('uint8')
         img = self.transform(img)
         target = self.labels[item] - min(self.labels)
@@ -104,12 +136,36 @@ class CIFAR100(Dataset):
             return img, target, item, sample_idx
 
     def __len__(self):
+        """
+        Returns the length of the labels attribute
+        Args:
+            self: The object whose labels attribute length is returned
+        Returns:
+            len: The length of the labels attribute
+        Calculates the length of the labels attribute by calling len() on it."""
         return len(self.labels)
 
 
 class MetaCIFAR100(CIFAR100):
 
     def __init__(self, args, partition='train', train_transform=None, test_transform=None, fix_seed=True):
+        """
+        Initialize MetaCIFAR100 dataset
+        Args:
+            args: Arguments - Contains hyperparameters
+            partition: Dataset partition ('train' or 'test') 
+            train_transform: Transformations for support set
+            test_transform: Transformations for query set
+            fix_seed: Fix random seed
+        Returns:
+            self: MetaCIFAR100 object
+        Processing Logic:
+            - Initialize superclass with args and partition
+            - Set hyperparameters - ways, shots, queries
+            - Set transforms or use defaults
+            - Organize data into classes
+            - Set test related attributes
+        """
         super(MetaCIFAR100, self).__init__(args, partition, False)
         self.fix_seed = fix_seed
         self.n_ways = args.n_ways
@@ -148,6 +204,20 @@ class MetaCIFAR100(CIFAR100):
         self.classes = list(self.data.keys())
 
     def __getitem__(self, item):
+        """
+        Samples batches from the dataset.
+        Args: 
+            item: {Index of the batch}
+        Returns:
+            support_xs: {Support set inputs}, 
+            support_ys: {Support set labels},
+            query_xs: {Query set inputs},
+            query_ys: {Query set labels}
+        {Processing Logic:
+        1. Samples classes and selects support and query examples from those classes
+        2. Applies data augmentation and transformations
+        3. Reshapes data and splits into support and query sets
+        4. Returns support and query examples with their labels}"""
         if self.fix_seed:
             np.random.seed(item)
         cls_sampled = np.random.choice(self.classes, self.n_ways, False)
@@ -184,6 +254,14 @@ class MetaCIFAR100(CIFAR100):
         return support_xs, support_ys, query_xs, query_ys
 
     def __len__(self):
+        """
+        Returns the number of test runs in the object
+        Args:
+            self: The object
+        Returns: 
+            n_test_runs: The number of test runs in the object
+        Computes the number of test runs by accessing the n_test_runs attribute of the object.
+        """
         return self.n_test_runs
 
 

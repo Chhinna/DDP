@@ -18,6 +18,23 @@ class ImageNet(Dataset):
                  is_sample=False, 
                  k=4096,
                  transform=None):
+         """Initializes the dataset.
+         Args: 
+             args: Dataset arguments
+             split: Dataset split ('train', 'val', 'test')
+             phase: Dataset phase ('train', 'val', 'test') for continual learning
+             is_sample: Whether to sample positive/negative pairs
+             k: Number of negative pairs per positive sample
+             transform: Data transform pipeline
+         Returns:
+             self: Dataset object
+         Processing Logic:
+             1. Sets dataset attributes like mean, std, transforms
+             2. Loads data from pickle file
+             3. Filters data based on split, phase, classes for continual learning
+             4. Maps labels to human-readable names
+             5. Samples positive/negative pairs for contrastive learning if is_sample is True
+         """
         super(Dataset, self).__init__()
         self.split = split
         self.phase = phase
@@ -164,6 +181,18 @@ class ImageNet(Dataset):
             self.cls_negative = np.asarray(self.cls_negative)
 
     def __getitem__(self, item):
+        """
+        Get item from dataset at index.
+        Args:
+            item: Index of item to retrieve
+        Returns: 
+            output: Image, target class, and other data
+        Processing Logic:
+            - Retrieve image and target from lists using index
+            - Normalize target class
+            - Optionally return negative samples
+            - Return image, target, and other requested data
+        """
         img = np.asarray(self.imgs[item]).astype('uint8')
         img = self.transform(img)
         target = self.labels[item] - min(self.labels)
@@ -177,6 +206,16 @@ class ImageNet(Dataset):
             return img, target, item, sample_idx
 
     def __len__(self):
+        """
+        Returns the length of the labels attribute
+        Args:
+            self: The object whose labels attribute length is returned
+        Returns:
+            An integer representing the length of the labels attribute
+        Calculates the length of the labels attribute of the object:
+        - Gets the labels attribute of the passed in object 
+        - Calls the built-in len() function on the labels attribute to get its length
+        - Returns the length"""
         return len(self.labels)
 
 
@@ -192,6 +231,26 @@ class MetaImageNet(ImageNet):
                  use_episodes=False,
                  disjoint_classes=False):
         
+         """
+         Initialize a MetaImageNet dataset
+         Args: 
+             args: Namespace of arguments
+             split: Dataset split (train/val/test) 
+             phase: Dataset phase (train/val/test)
+             train_transform: Transform for training samples
+             test_transform: Transform for test samples
+             fix_seed: Fix random seed
+             use_episodes: Use pre-defined episodes
+             disjoint_classes: Use disjoint classes for base/novel
+         Returns: 
+             N/A
+         Processing Logic:
+             - Initialize base attributes from args
+             - Load pre-defined episodes if use_episodes
+             - Define train/test transforms 
+             - Organize data into classes
+             - Shuffle classes if fix_seed
+         """
         super(MetaImageNet, self).__init__(args, split, phase)
         self.fix_seed = fix_seed
         self.n_ways = args.n_ways
@@ -277,6 +336,21 @@ class MetaImageNet(ImageNet):
             
 
     def __getitem__(self, item):
+        """
+        Generates episodes for few-shot learning
+        Args: 
+            item: Episode index
+        Returns:
+            support_xs: Support images
+            support_ys: Support labels 
+            query_xs: Query images
+            query_ys: Query labels
+        Processing Logic:
+        1. Samples support and query examples from dataset 
+        2. Applies data augmentation and transformations
+        3. Returns support and query examples in episode format
+        4. Handles training, validation and test phases differently
+        """
         if not self.use_episodes:
             
             if self.split == "train" and self.phase == "train" and self.n_base_support_samples > 0:
@@ -420,6 +494,15 @@ class MetaImageNet(ImageNet):
         return support_xs.float(), support_ys, query_xs.float(), query_ys
 
     def __len__(self):
+        """
+        Returns the length of the dataset
+        Args:
+            self: The dataset object
+        Returns:
+            length: The length of the dataset
+        - Checks if dataset is in train split and train phase, then returns number of test runs based on disjoint classes flag
+        - Else if using episodes, returns length of episode query ids 
+        - Else returns number of test runs"""
         if (self.split == "train" and self.phase == "train"):
             if self.disjoint_classes:
                 return 8

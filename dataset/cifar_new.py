@@ -14,6 +14,22 @@ class CIFAR100(Dataset):
     """support FC100 and CIFAR-FS"""
     def __init__(self, args, split='train', phase=None, is_sample=False, k=4096,
                  transform=None):
+        """Initializes the dataset for training, validation or testing
+        Args: 
+            args: Namespace of arguments
+            split: Dataset split ('train', 'val', 'test')
+            phase: Training phase ('train', 'val', 'test')
+            is_sample: Whether to sample positive/negative pairs
+            k: Number of negative samples per anchor
+        Returns:
+            None
+        Processing Logic:
+            - Loads CIFAR-FS dataset
+            - Normalizes images
+            - Applies data augmentation and transforms
+            - Samples positive/negative pairs if is_sample is True
+            - Handles class mapping for continual learning
+        """
         super(Dataset, self).__init__()
         self.data_root = args.data_root
         self.split = split
@@ -152,6 +168,21 @@ class CIFAR100(Dataset):
             self.cls_negative = np.asarray(self.cls_negative)
 
     def __getitem__(self, item):
+        """
+        Get item from dataset at index.
+        Args:
+            item: Index of item to retrieve. 
+        Returns:
+            img: Image at index as tensor.
+            target: Label of image as integer. 
+            item: Index of retrieved item.
+        Processing Logic:
+            - Retrieve image and label at given index from dataset
+            - Transform image using dataset transform
+            - Normalize label by subtracting minimum label value
+            - Return image, label and index
+            - Optionally also return positive and negative samples
+        """
         img = np.asarray(self.imgs[item]).astype('uint8')
         img = self.transform(img)
         target = self.labels[item] - min(self.labels)
@@ -165,11 +196,38 @@ class CIFAR100(Dataset):
             return img, target, item, sample_idx
 
     def __len__(self):
+        """
+        Returns the length (number of items) of the object.
+        Args:
+            self: The object.
+        Returns:
+            int: The length (number of items) of the object.
+        - Calls len() on the labels attribute of the object.
+        - len() returns the length (number of items) of the labels list/collection.
+        - This length is returned."""
         return len(self.labels)
 
 class MetaCIFAR100(CIFAR100):
 
     def __init__(self, args, split, phase=None, train_transform=None, test_transform=None, fix_seed=True, use_episodes = False, disjoint_classes=False):
+        """
+        Initialize the MetaCIFAR100 dataset
+        Args: 
+            args: Arguments - Contains hyperparameters
+            split: Dataset split (train/val/test)
+            phase: Dataset phase (train/test) 
+            train_transform: Transformations for training data
+            test_transform: Transformations for test data
+            fix_seed: Fix random seed
+            use_episodes: Use episode sampling 
+            disjoint_classes: Use disjoint classes
+        Returns:
+            None
+        Processing Logic:
+            1. Initialize hyperparameters like n_ways, n_shots etc from args
+            2. Apply train and test transformations 
+            3. Split data into classes and shuffle classes if fix_seed is True
+        """
         super(MetaCIFAR100, self).__init__(args, split, phase)
         self.fix_seed = fix_seed
         self.n_ways = args.n_ways
@@ -227,6 +285,21 @@ class MetaCIFAR100(CIFAR100):
             np.random.shuffle(self.classes)
 
     def __getitem__(self, item):
+        """
+        Generate episode for few-shot learning
+        Args: 
+            item: Episode index
+        Returns: 
+            support_xs: Support set images
+            support_ys: Support set labels 
+            query_xs: Query set images
+            query_ys: Query set labels
+        Processing Logic:
+            - Sample support and query set classes
+            - Sample images and labels for support and query sets from sampled classes
+            - Apply data augmentation and normalization
+            - Return support and query sets
+        """
         print("using episodes")
         print(self.use_episodes)
 
@@ -323,6 +396,17 @@ class MetaCIFAR100(CIFAR100):
         return support_xs.float(), support_ys, query_xs.float(), query_ys
         
     def __len__(self):
+        """
+        Returns the length of the dataset.
+        Args:
+            self: The dataset object.
+        Returns:
+            length: The length of the dataset.
+        - Check if split is train and phase is train
+        - If disjoint_classes is True, return 8
+        - Else return n_test_runs
+        - Else if use_episodes is True, return length of episode_query_ids 
+        - Else return n_test_runs"""
         if (self.split == "train" and self.phase == "train"):
             if self.disjoint_classes:
                 return 8

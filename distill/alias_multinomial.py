@@ -7,6 +7,20 @@ class AliasMethod(object):
     '''
     def __init__(self, probs):
 
+        """
+        Initializes the probability distribution for the alias table.
+        
+        Args:
+            probs: {List of probabilities for each outcome}
+        Returns: 
+            None: {Does not return anything, initializes internal state of object}
+        
+        Processing Logic:
+        - Checks that probs sum to 1
+        - Sorts outcomes into lists larger and smaller than 1/K 
+        - Iteratively pairs outcomes, with small outcome becoming an alias of large
+        - Ensures final probabilities sum to 1
+        """
         if probs.sum() > 1:
             probs.div_(probs.sum())
         K = len(probs)
@@ -43,6 +57,14 @@ class AliasMethod(object):
             self.prob[last_one] = 1
 
     def cuda(self):
+        """Moves the model to CUDA
+        Args:
+            self: The model object
+        Returns: 
+            None: Moves the model to CUDA
+        - Moves the probability vector 'prob' to CUDA
+        - Moves the alias vector 'alias' to CUDA
+        - Processes the model on GPU for faster inference"""
         self.prob = self.prob.cuda()
         self.alias = self.alias.cuda()
 

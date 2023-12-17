@@ -8,6 +8,22 @@ import math
 class NCESoftmax(nn.Module):
 
     def __init__(self, inputSize, outputSize, K, T=0.07, momentum=0.5):
+        """
+        Initializes NCESoftmax layer
+        Args:
+            inputSize: {Number of features in input}: Number of features in input
+            outputSize: {Number of classes}: Number of classes
+            K: {Number of negative samples}: Number of negative samples to use
+            T: {Temperature}: Temperature parameter for softmax
+            momentum: {Momentum value}: Momentum value for moving average
+        Returns: 
+            self: {NCESoftmax layer}: Initialized NCESoftmax layer
+        Processing Logic:
+            - Register buffers for parameters, memory_l and memory_ab
+            - Initialize memory_l and memory_ab with random values from normal distribution
+            - Initialize unigrams for alias sampling
+            - Initialize multinomial sampler
+        """
         super(NCESoftmax, self).__init__()
         self.nLem = outputSize
         self.unigrams = torch.ones(self.nLem)
@@ -21,6 +37,22 @@ class NCESoftmax(nn.Module):
         self.register_buffer('memory_ab', torch.rand(outputSize, inputSize).mul_(2 * stdv).add_(-stdv))
 
     def forward(self, l, ab, y, idx=None):
+        """
+        Computes forward pass of memory module
+        Args:
+            l: {Input feature vector}: Input feature vector of shape (batch_size, input_size) 
+            ab: {Context feature vector}: Context feature vector of shape (batch_size, input_size)
+            y: {Target labels}: Target labels of shape (batch_size)
+            idx: {Sampled indices}: Sampled indices of shape (batch_size, K+1) 
+        Returns: 
+            out_l, out_ab: {Output vectors}: Output feature vectors of shape (batch_size, K+1, input_size)
+        Processing Logic:
+            - Samples K indices from memory using multinomial distribution
+            - Looks up sampled vectors from memory using sampled indices
+            - Computes dot product between input and sampled vectors
+            - Normalizes outputs using normalization constants
+            - Updates memory with new inputs using momentum update
+        """
         K = int(self.params[0].item())
         T = self.params[1].item()
         Z_l = self.params[2].item()
@@ -88,6 +120,20 @@ class NCESoftmax(nn.Module):
 class NCEAverage(nn.Module):
 
     def __init__(self, inputSize, outputSize, K, T=0.07, momentum=0.5):
+        """
+        Initialize NCEAverage module
+        Args:
+            inputSize: {Size of input vector} 
+            outputSize: {Size of output vector}
+            K: {Number of negative samples}
+            T: {Temperature parameter for softmax} 
+            momentum: {Momentum value for moving average of memory}
+        Returns: 
+            None: {Does not return anything}
+        - Initializes buffers to store parameters and memories
+        - Samples from a multinomial distribution for negative sampling
+        - Initializes memory matrices with random uniform distribution
+        """
         super(NCEAverage, self).__init__()
         self.nLem = outputSize
         self.unigrams = torch.ones(self.nLem)
@@ -101,6 +147,22 @@ class NCEAverage(nn.Module):
         self.register_buffer('memory_ab', torch.rand(outputSize, inputSize).mul_(2 * stdv).add_(-stdv))
 
     def forward(self, l, ab, y, idx=None):
+        """
+        Computes forward pass of memory module
+        Args:
+            l: {Input feature vector}: Input feature vector of shape (batch_size, input_size) 
+            ab: {Context feature vector}: Context feature vector of shape (batch_size, input_size)
+            y: {Labels}: Labels of shape (batch_size)
+            idx: {Sampled indices}: Sampled indices of shape (batch_size, K+1) or None
+        Returns: 
+            out_l, out_ab: {Output vectors}: Output vectors of shape (batch_size, K+1, output_size)
+        Processing Logic:
+            - Samples K prototypes from memory based on input 
+            - Computes scores between input and prototypes
+            - Normalizes scores using learned constants
+            - Updates memory with new examples
+            - Returns normalized scores as output
+        """
         K = int(self.params[0].item())
         T = self.params[1].item()
         Z_l = self.params[2].item()
@@ -162,6 +224,22 @@ class NCEAverage(nn.Module):
 class NCEAverageWithZ(nn.Module):
 
     def __init__(self, inputSize, outputSize, K, T=0.07, momentum=0.5, z=None):
+        """
+        Initializes NCEAverageWithZ model
+        Args:
+            inputSize: Input dimension
+            outputSize: Output dimension 
+            K: Number of negative samples
+            T: Temperature parameter
+            momentum: Momentum for moving average
+            z: Memory strength
+        Returns: 
+            self: Initialized NCEAverageWithZ model
+        Processing Logic:
+            1. Initialize unigram distribution and multinomial sampler
+            2. Register model parameters and buffers
+            3. Initialize memory matrices with uniform distribution and std
+        """
         super(NCEAverageWithZ, self).__init__()
         self.nLem = outputSize
         self.unigrams = torch.ones(self.nLem)
@@ -179,6 +257,22 @@ class NCEAverageWithZ(nn.Module):
         self.register_buffer('memory_ab', torch.rand(outputSize, inputSize).mul_(2 * stdv).add_(-stdv))
 
     def forward(self, l, ab, y, idx=None):
+        """
+        Computes forward pass of memory module
+        Args:
+            l: {Input feature vector}: Input feature vector of shape (batch_size, input_size) 
+            ab: {Context feature vector}: Context feature vector of shape (batch_size, input_size)
+            y: {Labels}: Labels of shape (batch_size)
+            idx: {Sampled indices}: Sampled indices of shape (batch_size, K+1) 
+        Returns: 
+            out_l, out_ab: {Output vectors}: Output vectors of shape (batch_size, K+1, output_size)
+        Processing Logic:
+            - Samples K prototypes from memory based on input 
+            - Computes scores between input and prototypes
+            - Normalizes scores using learned constants
+            - Updates memory with new examples
+            - Returns normalized scores as output
+        """
         K = int(self.params[0].item())
         T = self.params[1].item()
         Z_l = self.params[2].item()
@@ -240,6 +334,21 @@ class NCEAverageWithZ(nn.Module):
 class NCEAverageFull(nn.Module):
 
     def __init__(self, inputSize, outputSize, T=0.07, momentum=0.5):
+        """
+        Initialize NCEAverageFull model
+        Args:
+            inputSize: Input dimension
+            outputSize: Output dimension 
+            T: Temperature parameter
+            momentum: Momentum for moving average
+        Returns: 
+            self: NCEAverageFull model instance
+        Processing Logic:
+            - Initialize parameters T, -1, -1, momentum as a buffer
+            - Initialize memory_l as random uniform tensor between -stdv and stdv
+            - Initialize memory_ab as random uniform tensor between -stdv and stdv 
+            - Call super init to initialize base class
+        """
         super(NCEAverageFull, self).__init__()
         self.nLem = outputSize
 
@@ -249,6 +358,20 @@ class NCEAverageFull(nn.Module):
         self.register_buffer('memory_ab', torch.rand(outputSize, inputSize).mul_(2 * stdv).add_(-stdv))
 
     def forward(self, l, ab, y):
+        """Computes forward pass through memory network.
+        
+        Args:
+            l: {Input feature vector l}: A tensor of shape (batch_size, input_size)
+            ab: {Input feature vector ab}: A tensor of shape (batch_size, input_size) 
+            y: {Target memory location}: A tensor of shape (batch_size)
+        Returns: 
+            out_l: {Output feature vector for l}: A tensor of shape (batch_size, output_size)
+            out_ab: {Output feature vector for ab}: A tensor of shape (batch_size, output_size)
+        Processing Logic:
+            - Computes scores for l and ab by taking inner product with memory
+            - Normalizes scores using temperature and normalization constants
+            - Samples from memory using scores to get output feature vectors
+            - Updates memory using momentum update"""
         T = self.params[0].item()
         Z_l = self.params[1].item()
         Z_ab = self.params[2].item()
@@ -315,6 +438,20 @@ class NCEAverageFull(nn.Module):
 class NCEAverageFullSoftmax(nn.Module):
 
     def __init__(self, inputSize, outputSize, T=1, momentum=0.5):
+        """
+        Initializes the NCEAverageFullSoftmax module
+        Args:
+            inputSize: Input dimension of the data
+            outputSize: Output dimension of the data 
+            T: Temperature parameter for softmax
+            momentum: Momentum value for moving average
+        Returns: 
+            self: Returns the NCEAverageFullSoftmax module
+        Processing Logic:
+            - Registers temperature and momentum as module parameters
+            - Initializes memory_l and memory_ab as module buffers with random uniform initialization
+            - memory_l and memory_ab store the learnable parameters of the module
+        """
         super(NCEAverageFullSoftmax, self).__init__()
         self.nLem = outputSize
 
@@ -324,6 +461,18 @@ class NCEAverageFullSoftmax(nn.Module):
         self.register_buffer('memory_ab', torch.rand(outputSize, inputSize).mul_(2 * stdv).add_(-stdv))
 
     def forward(self, l, ab, y):
+        """Computes the forward pass through a memory network
+        Args:
+            l: {Input feature vector}: A batch of input feature vectors 
+            ab: {Context feature vector}: A batch of context feature vectors
+            y: {Target indices}: Target indices for memory update
+        Returns: 
+            out_l, out_ab: {Output score vectors}: Score vectors for input against memory
+        Processing Logic:
+            - Computes scores between input and memory
+            - Updates memory with new inputs
+            - Returns score vectors
+        """
         T = self.params[0].item()
         momentum = self.params[1].item()
         batchSize = l.size(0)
@@ -362,6 +511,21 @@ class NCEAverageFullSoftmax(nn.Module):
         return out_l, out_ab
 
     def update_memory(self, l, ab, y):
+        """
+        Updates memory based on new samples
+        Args:
+            self: The class instance
+            l: Embedding for labels
+            ab: Embedding for attributes
+            y: Index of sample to update
+        Returns: 
+            None: Memory is updated in-place
+        Processing Logic:
+            - Select memory rows corresponding to sample indices
+            - Update rows with momentum weighted average of old value and new sample embedding
+            - Renormalize updated rows to unit length
+            - Copy updated rows back into memory
+        """
         momentum = self.params[1].item()
         # update memory
         with torch.no_grad():
