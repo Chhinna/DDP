@@ -9,6 +9,26 @@ import torchvision.transforms as transforms
 class TieredImageNet(Dataset):
     def __init__(self, args, partition='train', pretrain=True, is_sample=False, k=4096,
                  transform=None):
+        """Initializes a Dataset object
+        
+        Args:
+            args: Namespace of arguments - {Argument description in one line}
+            partition: str - {Argument description in one line}
+            pretrain: bool - {Argument description in one line}
+            is_sample: bool - {Argument description in one line}
+            k: int - {Argument description in one line}
+            transform: transform - {Argument description in one line}
+        
+        Returns:
+            self: Dataset - Initialized Dataset object
+        
+        Processing Logic:
+            - Loads image and label data from files
+            - Normalizes images
+            - Applies data augmentation if partition is 'train'
+            - Pools train data from two files if pretrain and augment_pretrain_wtrainb
+            - Samples positive and negative pairs for contrastive learning if is_sample
+        """
         super(Dataset, self).__init__()
         self.data_root = args.data_root
         self.partition = partition
@@ -91,6 +111,20 @@ class TieredImageNet(Dataset):
             self.cls_negative = np.asarray(self.cls_negative)
 
     def __getitem__(self, item):
+        """
+        Get item from dataset at index.
+        Args:
+            item: Index of item to retrieve
+        Returns: 
+            img: Image at index as tensor
+            target: Label of image
+            item: Index
+        Processing Logic:
+            - Get image and target from lists using index
+            - Normalize target by subtracting min label value 
+            - Return image and target
+            - Optionally also return positive and negative samples
+        """
         img = np.asarray(self.imgs[item]).astype('uint8')
         img = self.transform(img)
         target = self.labels[item] - min(self.labels)
@@ -105,10 +139,25 @@ class TieredImageNet(Dataset):
             return img, target, item, sample_idx
 
     def __len__(self):
+        """
+        Returns the length of the labels attribute
+        Args:
+            self: The object whose labels attribute length is returned
+        Returns:
+            len: The length of the labels attribute
+        Calculates the length of the labels attribute by calling the built-in len() function on it."""
         return len(self.labels)
 
     @staticmethod
     def _load_labels(file):
+        """Load labels from a pickle file
+        Args:
+            file: File path to load labels from
+        Returns: 
+            data: Loaded labels data
+        - Try to load data from file using pickle.load
+        - If that fails, try loading with latin1 encoding
+        - Return loaded data"""
         try:
             with open(file, 'rb') as fo:
                 data = pickle.load(fo)
@@ -124,6 +173,23 @@ class TieredImageNet(Dataset):
 class MetaTieredImageNet(TieredImageNet):
 
     def __init__(self, args, partition='train', train_transform=None, test_transform=None, fix_seed=True):
+        """
+        Initialize MetaTieredImageNet dataset
+        Args: 
+            args: Arguments - Contains dataset configuration
+            partition: Dataset partition ('train' or 'test')
+            train_transform: Transformations for training data
+            test_transform: Transformations for test data 
+            fix_seed: Fix random seed
+        Returns:
+            self: MetaTieredImageNet object
+        Processing Logic:
+            - Initialize superclass with args and partition
+            - Set attributes like n_ways, n_shots, n_queries from args
+            - Define train and test transforms if not provided
+            - Organize images into classes based on labels
+            - Set class list attribute
+        """
         super(MetaTieredImageNet, self).__init__(args, partition, False)
         self.fix_seed = fix_seed
         self.n_ways = args.n_ways
@@ -162,6 +228,19 @@ class MetaTieredImageNet(TieredImageNet):
         self.classes = list(self.data.keys())
 
     def __getitem__(self, item):
+        """
+        Samples data for few-shot classification tasks
+        Args: 
+            self: The data sampler object
+            item: The random seed
+        Returns:
+            support_xs, support_ys, query_xs, query_ys: The sampled support and query sets
+        Processing Logic:
+            1. Samples N-way K-shot classification tasks from dataset
+            2. Samples support and query examples for each class
+            3. Applies data augmentation and transformations
+            4. Reshapes and splits data into mini-batches
+        """
         if self.fix_seed:
             np.random.seed(item)
         cls_sampled = np.random.choice(self.classes, self.n_ways, False)
@@ -198,6 +277,14 @@ class MetaTieredImageNet(TieredImageNet):
         return support_xs, support_ys, query_xs, query_ys
 
     def __len__(self):
+        """
+        Returns the number of test runs in the object
+        Args:
+            self: The object
+        Returns: 
+            n_test_runs: The number of test runs in the object
+        Calculates the number of test runs by accessing the n_test_runs attribute of the object.
+        """
         return self.n_test_runs
 
 
