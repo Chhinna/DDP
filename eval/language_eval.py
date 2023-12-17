@@ -59,7 +59,7 @@ def eval_base(net, base_batch, criterion, vocab_all=None, df=None, return_preds=
             ys_pred = torch.argmax(output, dim=1).detach().cpu().numpy()
             imgdata = input.detach().numpy()
             base_info = [(0, vocab_all[target_i], True, vocab_all[ys_pred[i]],
-                          image_formatter(imgdata[i,:,:,:])) for target_i in target]
+                          image_formatter(imgdata[i,:,:,:])) for i,target_i in enumerate(target)]
             df = df.append(pd.DataFrame(base_info, columns=df.columns), ignore_index=True)
 
         if return_preds:
@@ -348,7 +348,7 @@ def few_shot_finetune_incremental_test(net,
 
             if vis and idx == 0:
                 novel_info = [(idx, vocab_all[query_ys_id_i], False, vocab_all[query_ys_pred[i]],
-                               image_formatter(novelimgs[i,:,:,:]))  for query_ys_id_i in query_ys_id]
+                               image_formatter(novelimgs[i,:,:,:]))  for i,query_ys_id_i in enumerate(query_ys_id)]
                 df = df.append(pd.DataFrame(novel_info, columns=df.columns), ignore_index=True)
 
             epoch += 1
