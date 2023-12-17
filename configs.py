@@ -136,6 +136,23 @@ def parse_option_supervised():
         - Splits epochs for learning rate decay into a list
         - Prints all arguments
     """
+    opt = parse_arguments()
+
+    set_default_values(opt)
+
+    # Print opt
+
+    # Add git commit hash
+    with subprocess.Popen(['git', 'rev-parse', '--short', 'HEAD'], shell=False, stdout=subprocess.PIPE) as process:
+        git_head_hash = process.communicate()[0].strip()
+        opt.git_head_hash = git_head_hash.decode()
+        print("************* Training arguments *************")
+        for arg in vars(opt):
+            print(arg, getattr(opt, arg))
+        print("End of arguments.\n")
+        return opt
+
+def parse_arguments():
     parser = argparse.ArgumentParser('argument for training')
 
     parser.add_argument('--eval_freq', type=int, default=10, help='meta-eval frequency')
@@ -208,7 +225,9 @@ def parse_option_supervised():
         parser.add_argument('--glove', action='store_true',
                             help='Use of Glove embeds instead of Vico.')
     opt = parser.parse_args()
+    return opt
 
+def set_default_values(opt):
     if opt.dataset in {'CUB_200_2011', 'FC100'}:
         opt.transform = 'D'
 
@@ -227,7 +246,7 @@ def parse_option_supervised():
     opt.data_aug = True
 
     iterations = opt.lr_decay_epochs.split(',')
-    
+
     opt.lr_decay_epochs = [] + [int(it) for it in iterations]
 
 
@@ -246,9 +265,7 @@ def parse_option_supervised():
 
     opt.n_gpu = 1
     print("Device count: ", opt.n_gpu)
-
-    # Print opt
-
+def print_args(opt):
     # Add git commit hash
     with subprocess.Popen(['git', 'rev-parse', '--short', 'HEAD'], shell=False, stdout=subprocess.PIPE) as process:
         git_head_hash = process.communicate()[0].strip()
@@ -257,7 +274,7 @@ def parse_option_supervised():
         for arg in vars(opt):
             print(arg, getattr(opt, arg))
         print("End of arguments.\n")
-        return opt
+
     
     
 
