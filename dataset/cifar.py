@@ -61,10 +61,11 @@ class CIFAR100(Dataset):
         else:
             self.transform = transform
 
-        if self.pretrain:
-            self.file_pattern = '%s.pickle'
-        else:
-            self.file_pattern = '%s.pickle'
+
+        self.file_pattern = '%s.pickle'
+        if not self.pretrain:
+            pass
+
         self.data = {}
 
         with open(os.path.join(self.data_root, self.file_pattern % partition), 'rb') as f:
@@ -78,9 +79,7 @@ class CIFAR100(Dataset):
                 if label not in label2label:
                     label2label[label] = cur_class
                     cur_class += 1
-            new_labels = []
-            for idx, label in enumerate(labels):
-                new_labels.append(label2label[label])
+            new_labels = [label2label[label] for (idx, label) in enumerate(labels)]
             self.labels = new_labels
 
         # pre-process for contrastive sampling
@@ -128,12 +127,11 @@ class CIFAR100(Dataset):
 
         if not self.is_sample:
             return img, target, item
-        else:
-            pos_idx = item
-            replace = True if self.k > len(self.cls_negative[target]) else False
-            neg_idx = np.random.choice(self.cls_negative[target], self.k, replace=replace)
-            sample_idx = np.hstack((np.asarray([pos_idx]), neg_idx))
-            return img, target, item, sample_idx
+        pos_idx = item
+        replace = True if self.k > len(self.cls_negative[target]) else False
+        neg_idx = np.random.choice(self.cls_negative[target], self.k, replace=replace)
+        sample_idx = np.hstack((np.asarray([pos_idx]), neg_idx))
+        return img, target, item, sample_idx
 
     def __len__(self):
         """
@@ -253,8 +251,8 @@ class MetaCIFAR100(CIFAR100):
         query_xs = query_xs.reshape((-1, height, width, channel))
         query_xs = np.split(query_xs, query_xs.shape[0], axis=0)
 
-        support_xs = torch.stack(list(map(lambda x: self.train_transform(x.squeeze()), support_xs)))
-        query_xs = torch.stack(list(map(lambda x: self.test_transform(x.squeeze()), query_xs)))
+        support_xs = torch.stack([self.train_transform(x.squeeze()) for x in support_xs])
+        query_xs = torch.stack([self.test_transform(x.squeeze()) for x in query_xs])
 
         return support_xs, support_ys, query_xs, query_ys
 

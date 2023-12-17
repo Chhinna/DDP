@@ -28,19 +28,18 @@ def validate(query_xs, query_ys_id, net, criterion, opt, epoch):
                     losses.append(r[2])
                     preds.append(r[3])
                 return acc1, acc5, losses, preds
-            else:
-                query_xs = query_xs.cuda()
-                query_ys_id = query_ys_id.cuda()
+            query_xs = query_xs.cuda()
+            query_ys_id = query_ys_id.cuda()
 
-                # compute output
-                output = net(query_xs)
-                loss = criterion(output, query_ys_id)
+            # compute output
+            output = net(query_xs)
+            loss = criterion(output, query_ys_id)
 
-                # measure accuracy and record loss
-                acc1, acc5 = accuracy(output, query_ys_id, topk=(1, 5))
-                query_ys_pred = torch.argmax(output, dim=1).detach().cpu().numpy()
+            # measure accuracy and record loss
+            acc1, acc5 = accuracy(output, query_ys_id, topk=(1, 5))
+            query_ys_pred = torch.argmax(output, dim=1).detach().cpu().numpy()
 
-                return acc1[0], acc5[0], loss.item(), query_ys_pred
+            return acc1[0], acc5[0], loss.item(), query_ys_pred
 
 
 def eval_base(net, base_batch, criterion, vocab_all=None, df=None, return_preds=False):
@@ -59,8 +58,8 @@ def eval_base(net, base_batch, criterion, vocab_all=None, df=None, return_preds=
         if df is not None:
             ys_pred = torch.argmax(output, dim=1).detach().cpu().numpy()
             imgdata = input.detach().numpy()
-            base_info = [(0, vocab_all[target[i]], True, vocab_all[ys_pred[i]],
-                          image_formatter(imgdata[i,:,:,:])) for i in range(len(target))]
+            base_info = [(0, vocab_all[target_i], True, vocab_all[ys_pred[i]],
+                          image_formatter(imgdata[i,:,:,:])) for i,target_i in enumerate(target)]
             df = df.append(pd.DataFrame(base_info, columns=df.columns), ignore_index=True)
 
         if return_preds:
@@ -137,11 +136,13 @@ def few_shot_finetune_incremental_test(net,
 
         # Retrieve the classes used for base training.
         basec_map = ckpt['training_classes']
-        basec_map_rev = {}
-        for k, v in basec_map.items():
-            basec_map_rev[v] = k
+        basec_map_rev = {v: k for (k, v) in basec_map.items()}
 
     # Iterate over sessions.
+
+    opt.stable = True if opt.target_train_loss == 0 else False
+
+    w1 = 60 if opt.dataset == "miniImageNet" else 200
     for idx in range(iter_num):
         torch.cuda.empty_cache()
         print("\n**** Iteration {}/{} ****\n".format(idx+1, opt.neval_episodes))
@@ -238,7 +239,7 @@ def few_shot_finetune_incremental_test(net,
         epoch = 1
 
         # Stable epochs
-        opt.stable = True if opt.target_train_loss == 0 else False
+        
         stable_epochs = 0
 
         stop_condition = True
@@ -248,7 +249,7 @@ def few_shot_finetune_incremental_test(net,
             support_ys_id = support_ys_id.cuda()
 
             # Compute output
-            if opt.classifier in ["lang-linear", "description-linear"] and opt.attention is not None:
+            if opt.classifier in {"lang-linear", "description-linear"} and opt.attention is not None:
                 output, alphas = net(support_xs, get_alphas=True)
                 loss = criterion(output, support_ys_id) + opt.diag_reg * criterion(alphas, support_ys_id)
             else:
@@ -346,8 +347,8 @@ def few_shot_finetune_incremental_test(net,
 
 
             if vis and idx == 0:
-                novel_info = [(idx, vocab_all[query_ys_id[i]], False, vocab_all[query_ys_pred[i]],
-                               image_formatter(novelimgs[i,:,:,:]))  for i in range(len(query_ys_id))]
+                novel_info = [(idx, vocab_all[query_ys_id_i], False, vocab_all[query_ys_pred[i]],
+                               image_formatter(novelimgs[i,:,:,:]))  for i,query_ys_id_i in enumerate(query_ys_id)]
                 df = df.append(pd.DataFrame(novel_info, columns=df.columns), ignore_index=True)
 
             epoch += 1
@@ -383,7 +384,7 @@ def few_shot_finetune_incremental_test(net,
         acc_novel.update(test_acc)
         
         # Number of base classes
-        w1 = 60 if opt.dataset == "miniImageNet" else 200 # tiered
+         # tiered
 
         # Number of novel classes
         w2 = len(vocab_base) + len(vocab_novel) - 60
@@ -397,18 +398,28 @@ def few_shot_finetune_incremental_test(net,
 
         print(f"***Running weighted avg: {weighted_avg}")
         print("I am printing here")
-        file1 = open("logs.txt", "a")
-        file1.write(str(opt.set_seed))
-        file1.write("#")
-        file1.write(str(opt.learning_rate))
-        file1.write("#")
-        file1.write(str(opt.lmbd_reg_novel))
-        file1.write("#")
-        file1.write(str(opt.lmbd_reg_transform_w))
-        file1.write("#")
-        file1.writelines(str(weighted_avg))
-        file1.write('\n')
-        file1.close()
+        with open('logs.txt', 'a', encoding='utf-8') as file1:
+            file1.write(str(opt.set_seed))
+            file1.write("#")
+            file1.write(str(opt.learning_rate))
+            file1.write("#")
+            file1.write(str(opt.lmbd_reg_novel))
+            file1.write("#")
+            file1.write(str(opt.lmbd_reg_transform_w))
+            file1.write("#")
+            file1.writelines(str(weighted_avg))
+            file1.write('\n')
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         # Log episode results.
         log_episode(novel_labels,
                     vocab_novel,
@@ -419,38 +430,22 @@ def few_shot_finetune_incremental_test(net,
                     acc_novel.avg)
 
         
-        if opt.save_preds_0:
-        # Saving predictions for visualization/error analysis, if specified.
-            _, base_query_ys, *_ = base_batch
-            base_query_ys = base_query_ys.squeeze(0)
-            acc_base_, base_preds = eval_base(net, base_batch, criterion,
-                                              vocab_all, return_preds=True)
-            if idx == 0:
-                id2orig = {}
-            for k, v in orig2id.items():
-                id2orig[v] = k
-
-            # base_size = net.num_classes
-            query_ys_pred_orig, novel_collective_ys_orig = map2original([query_ys_pred[0],
-                                                               novel_query_collection_id[0]],
-                                                              [id2orig,
-                                                               basec_map_rev])
-            base_preds_orig, base_query_ys_orig = map2original([base_preds,
-                                                      base_query_ys],
-                                                     [id2orig,
-                                                      basec_map_rev])
-
-
-            temp_df = pd.DataFrame({
-                 "Episode": np.repeat(idx, len(novel_collective_ys_orig)+len(base_query_ys_orig)),
-                 "Gold": np.concatenate((novel_query_collection_id[0], base_query_ys), 0),
-                 "Prediction": np.concatenate((query_ys_pred[0], base_preds), 0).astype(int),
-                 "Original_Gold": np.concatenate((novel_collective_ys_orig, base_query_ys_orig), 0),
-                 "Original_Prediction": np.concatenate((query_ys_pred_orig, base_preds_orig), 0).astype(int)})
-            preds_df = pd.concat([preds_df, temp_df], 0)
-            if idx == iter_num-1:
-                filename = f"csv_files_mem/seed_{opt.set_seed}_{opt.dataset}_{opt.n_shots}_{opt.label_pull}_{opt.attraction_override}_continual_{opt.continual}_mem_{opt.memory_replay}_predictions.csv"
-                preds_df.to_csv(filename, index=False)
+        if not opt.save_preds_0:
+            continue
+        (_, base_query_ys, *_) = base_batch
+        base_query_ys = base_query_ys.squeeze(0)
+        (acc_base_, base_preds) = eval_base(net, base_batch, criterion, vocab_all, return_preds=True)
+        if idx == 0:
+            id2orig = {}
+        for (k, v) in orig2id.items():
+            id2orig[v] = k
+        (query_ys_pred_orig, novel_collective_ys_orig) = map2original([query_ys_pred[0], novel_query_collection_id[0]], [id2orig, basec_map_rev])
+        (base_preds_orig, base_query_ys_orig) = map2original([base_preds, base_query_ys], [id2orig, basec_map_rev])
+        temp_df = pd.DataFrame({"Episode": np.repeat(idx, len(novel_collective_ys_orig) + len(base_query_ys_orig)), "Gold": np.concatenate((novel_query_collection_id[0], base_query_ys), 0), "Prediction": np.concatenate((query_ys_pred[0], base_preds), 0).astype(int), "Original_Gold": np.concatenate((novel_collective_ys_orig, base_query_ys_orig), 0), "Original_Prediction": np.concatenate((query_ys_pred_orig, base_preds_orig), 0).astype(int)})
+        preds_df = pd.concat([preds_df, temp_df], 0)
+        if idx == iter_num - 1:
+            filename = f"csv_files_mem/seed_{opt.set_seed}_{opt.dataset}_{opt.n_shots}_{opt.label_pull}_{opt.attraction_override}_continual_{opt.continual}_mem_{opt.memory_replay}_predictions.csv"
+            preds_df.to_csv(filename, index=False)
 
 
     # Tracking old and new parameters for PCA visualization.
@@ -459,25 +454,33 @@ def few_shot_finetune_incremental_test(net,
 
     if opt.track_weights:
         track_weights.to_csv(f"track_weights_{opt.eval_mode}_pulling_{opt.pulling}_{opt.label_pull}_target_loss_{opt.target_train_loss}_synonyms_{opt.use_synonyms}.csv", index=False)
-    file1 = open("logs.txt", "a")
-    file1.write(str(opt.set_seed))
-    file1.write("#")
-    file1.write(str(opt.learning_rate))
-    file1.write("#")
-    file1.write(str(lmbd_reg_novel))
-    file1.write("#")
-    file1.write(str(lmbd_reg_transform_w))
-    file1.write("#")
-    file1.writelines(str(weighted_avg_l))
-    file1.close()
+    with open('logs.txt', 'a', encoding='utf-8') as file1:
+        file1.write(str(opt.set_seed))
+        file1.write("#")
+        file1.write(str(opt.learning_rate))
+        file1.write("#")
+        file1.write(str(lmbd_reg_novel))
+        file1.write("#")
+        file1.write(str(lmbd_reg_transform_w))
+        file1.write("#")
+        file1.writelines(str(weighted_avg_l))
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     if vis:
         return df
-    else:
-        print("Overall continual accuracies: ", weighted_avg_l)
-        print("Novel only incremental: ", acc_novel_list)
-        print("Base only incremental: ", acc_base_list)
+    print("Overall continual accuracies: ", weighted_avg_l)
+    print("Novel only incremental: ", acc_novel_list)
+    print("Base only incremental: ", acc_base_list)
         
-        file1 = open("logs.txt", "a")
+    with open('logs.txt', 'a', encoding='utf-8') as file1:
         file1.write(opt.set_seed)
         file1.write("#")
         file1.write(opt.learning_rate)
@@ -487,8 +490,17 @@ def few_shot_finetune_incremental_test(net,
         file1.write(lmbd_reg_transform_w)
         file1.write("#")
         file1.writelines(weighted_avg_l)
-        file1.close()
-        return acc_novel.avg, acc_base.avg
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    return acc_novel.avg, acc_base.avg
 
 
 def map2original(ls, dictlist):
@@ -497,8 +509,7 @@ def map2original(ls, dictlist):
         for k, v in d.items():
             if k in combined:
                 raise ValueError()
-            else:
-                combined[k] = v
+            combined[k] = v
     values = combined.values()
     assert len(np.unique(values)) != len(values)
     rlist = []*len(ls)
