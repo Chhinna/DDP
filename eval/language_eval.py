@@ -16,6 +16,28 @@ import pandas as pd
 
 
 def validate(query_xs, query_ys_id, net, criterion, opt, epoch):
+    """
+    Validates the model on the query data.
+    Args:
+        query_xs: The query images
+        query_ys_id: The query labels
+        net: The model
+        criterion: The loss function 
+        opt: The optimizer
+        epoch: The current epoch number
+    Returns: 
+        acc1: Top-1 accuracy
+        acc5: Top-5 accuracy
+        loss: The validation loss
+        query_ys_pred: Predicted labels for the query images
+    Processing Logic:
+        1. Put the model in evaluation mode
+        2. Move data to GPU if available
+        3. Forward pass the query images through the model
+        4. Compute loss between predictions and labels
+        5. Measure top-1 and top-5 accuracy
+        6. Return accuracy metrics and loss
+    """
     net.eval()
     with torch.no_grad():
         if torch.cuda.is_available():
@@ -43,6 +65,24 @@ def validate(query_xs, query_ys_id, net, criterion, opt, epoch):
 
 
 def eval_base(net, base_batch, criterion, vocab_all=None, df=None, return_preds=False):
+    """
+    Evaluates a neural network on a base batch of data
+    Args:
+        net: The neural network to evaluate
+        base_batch: The batch of data to evaluate on
+        criterion: The loss function
+        vocab_all: Vocabulary mapping (optional)
+        df: DataFrame to store predictions (optional)  
+    Returns:
+        Accuracy: Average accuracy on the batch
+    Processing Logic:
+        1. Put network in eval mode
+        2. Forward pass input through network
+        3. Calculate accuracy
+        4. Optionally return predictions
+        5. Optionally log predictions to DataFrame
+        6. Return average accuracy
+    """
     acc_base_ = []
     net.eval()
     with torch.no_grad():
@@ -75,6 +115,25 @@ def few_shot_finetune_incremental_test(net,
                                        opt,
                                        vis=False,
                                        base_support_loader=None):
+    """
+    Few-shot incremental test function
+    Args: 
+        net: {Neural network model}
+        ckpt: {Checkpoint of pretrained model weights}
+        criterion: {Loss function} 
+        meta_valloader: {Validation loader for novel classes}
+        base_val_loader: {Validation loader for base classes}
+        opt: {Training options}
+        vis: {Visualization flag}
+        base_support_loader: {Support loader for base classes}
+    Returns: 
+        acc_novel: {Average accuracy on novel classes}
+        acc_base: {Average accuracy on base classes}
+    {Performs few-shot incremental learning by:
+    - Augmenting classifier for new classes
+    - Fine-tuning on novel support set  
+    - Evaluating on novel and base query sets
+    - Repeating for multiple sessions/iterations}"""
 
     # Create dataframes to collect data for visualization.
     if vis:
@@ -504,6 +563,21 @@ def few_shot_finetune_incremental_test(net,
 
 
 def map2original(ls, dictlist):
+    """
+    Maps list elements to original values using a dictionary list.
+    Args:
+        ls: List of elements to map
+        dictlist: List of dictionaries containing mappings
+    Returns: 
+        rlist: Mapped list of elements
+    Processing Logic:
+        1. Combine all dictionaries into a single dictionary
+        2. Check for duplicate keys and raise error
+        3. Get list of all values
+        4. Assert values are unique
+        5. Map each element in input list to original using combined dictionary
+        6. Return mapped list
+    """
     combined = {}
     for d in dictlist:
         for k, v in d.items():
