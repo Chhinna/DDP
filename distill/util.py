@@ -6,31 +6,12 @@ import torch.nn as nn
 class Embed(nn.Module):
     """Embedding module"""
     def __init__(self, dim_in=1024, dim_out=128):
-        """Initializes embedding layer
-        Args:
-            dim_in: Dimension of input embeddings
-            dim_out: Dimension of output embeddings 
-        Returns: 
-            self: Initialized Embed layer object
-        Initializes a linear layer that maps inputs to outputs and l2 normalizes outputs.
-        - Creates a linear layer that maps from dim_in to dim_out
-        - Adds an l2 normalization layer to normalize the outputs"""
-        super(Embed, self).__init__()
+                super(Embed, self).__init__()
         self.linear = nn.Linear(dim_in, dim_out)
         self.l2norm = Normalize(2)
 
     def forward(self, x):
-        """Forward pass of the model. 
-        Args: 
-            x: Input tensor of shape (batch_size, *).
-        Returns: 
-            x: Output tensor of shape (batch_size, hidden_size).
-        - Flatten input tensor x to shape (batch_size, -1) 
-        - Apply linear transformation to flatten tensor
-        - Apply L2 normalization to output
-        - Return normalized output tensor
-        """
-        x = x.view(x.shape[0], -1)
+                x = x.view(x.shape[0], -1)
         x = self.linear(x)
         x = self.l2norm(x)
         return x
