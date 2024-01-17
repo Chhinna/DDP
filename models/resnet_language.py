@@ -11,14 +11,49 @@ from models.util import get_embeds
 
 class LinearMap(nn.Module):
     def __init__(self, indim, outdim):
+        """
+        Initialize a linear map layer
+        Args:
+            indim: Input dimension
+            outdim: Output dimension 
+        Returns: 
+            None: Does not return anything
+        - Creates a linear layer using PyTorch's nn.Linear module to map from input to output dimensions
+        - Initializes the parent class 
+        - Stores the linear layer in an attribute called 'map'"""
         super(LinearMap, self).__init__()
         self.map = nn.Linear(indim, outdim)
         
     def forward(self, x):
+        """Forward pass of the layer. 
+        Args: 
+            x: Input tensor 
+        Returns: 
+            Tensor: Transformed input tensor
+        - Apply linear transformation: y = Wx + b
+        - Apply activation: output = activation(y)"""
         return self.map(x)
         
 class LangPuller(nn.Module):
     def __init__(self,opt, vocab_base, vocab_novel):
+        """Initializes the LangPuller model
+        
+        Args: 
+            self: The LangPuller object
+            opt: Training options
+            vocab_base: Base vocabulary 
+            vocab_novel: Novel vocabulary
+        
+        Returns: 
+            None
+        
+        Processing Logic:
+            - Initializes base and novel word embeddings 
+            - Retrieves base and novel embeddings from files
+            - Puts embeddings on GPU
+            - Initializes softmax for label attractors
+            - Truncates embeddings to first 300 dimensions if using GloVe
+        """
         super(LangPuller, self).__init__()
         self.mapping_model = None
         self.opt = opt
@@ -54,6 +89,17 @@ class LangPuller(nn.Module):
             self.novel_embeds = self.novel_embeds[:,:300]
             
     def update_novel_embeds(self, vocab_novel):
+        """
+        Update novel embeddings
+        Args: 
+            vocab_novel: Vocabulary of novel words
+        Returns: 
+            self: Updated model object
+        Processing Logic:
+            - Retrieve novel embeddings from file
+            - Set novel embeddings on model to new embeddings
+            - If using Glove, truncate novel embeddings to first 300 dimensions
+        """
         # Retrieve novel embeds
         opt = self.opt
         dim = opt.word_embed_size
@@ -65,6 +111,18 @@ class LangPuller(nn.Module):
 #         self.novel_embeds = torch.cat((self.novel_embeds, new_novel_embeds), 0)
 
     def create_pulling_mapping(self, state_dict, base_weight_size=640):
+        """
+        Maps novel embeddings to base weight size.
+        Args: 
+            state_dict: State dictionary of pretrained linear mapping model
+            base_weight_size: Size of base weights (default 640)
+        Returns: 
+            self: Object with embedded mapping model
+        - Loads state dictionary into a LinearMap module
+        - Sets input and output dimensions of LinearMap
+        - Moves LinearMap to GPU
+        - Attaches LinearMap to self as mapping_model
+        """
         indim = self.novel_embeds.size(1)
         outdim = base_weight_size
         self.mapping_model = LinearMap(indim, outdim)
@@ -73,6 +131,20 @@ class LangPuller(nn.Module):
         
 
     def forward(self, base_weight, mask=False):
+        """
+        Forward pass through the model.
+        Args:
+            base_weight: Base weight matrix to pull from.
+            mask: Whether to mask diagonal in similarity computation.
+        Returns: 
+            scores: Weighted base embeddings pulled for each novel example.
+        Processing Logic:
+            - Compute similarity between novel and base embeddings.
+            - Apply softmax with temperature. 
+            - Mask diagonal in similarity matrix if specified.
+            - Weight base embeddings by similarity scores.
+            - Alternatively, apply linear mapping model to novel embeddings.
+        """
         if self.mapping_model is None:
             # Default way of computing pullers is thru sem. sub. reg.:
             scores = self.novel_embeds @ torch.transpose(self.base_embeds, 0, 1)
@@ -88,10 +160,30 @@ class LangPuller(nn.Module):
 
     @staticmethod
     def loss1(pull, inspired, weights):
+        """Calculates loss between pull and distance between inspired and weights
+        Args:
+            pull: Pull value
+            inspired: Inspired tensor 
+            weights: Weights tensor
+        Returns: 
+            Loss: Loss value between pull and distance
+        - Calculates L2 norm of difference between inspired and weights tensors
+        - Multiplies pull value with squared L2 norm
+        - Returns product as loss value"""
         return pull * torch.norm(inspired - weights)**2
 
     @staticmethod
     def get_projected_weight(base_weight, weights):
+        """Project base weight onto subspace spanned by weights.
+        Args:
+            base_weight: Base weight vector to project. 
+            weights: Weight vectors spanning the subspace.
+        Returns: 
+            projected_weight: Projected base weight vector.
+        - Transpose base_weight for matrix multiplication.
+        - Perform QR decomposition on transposed base_weight to get orthonormal basis Q.
+        - Project weights onto Q to get coefficients mut.  
+        - Normalize mut by column norms of Q to ignore scaling."""
         tr = torch.transpose(base_weight, 0, 1)
         Q, R = torch.qr(tr, some=True) # Q is 640x60
         mut = weights @ Q # mut is 5 x 60
@@ -104,6 +196,21 @@ class ResNet(nn.Module):
 
     def __init__(self, block, n_blocks, keep_prob=1.0, avg_pool=False, drop_rate=0.0,
                  dropblock_size=5, num_classes=-1, use_se=False, vocab=None, opt=None):
+        """
+        Initializes a ResNet model
+        Args:
+            block: {Block type to use (BasicBlock, Bottleneck, etc)}
+            n_blocks: {Number of blocks for each layer of the ResNet} 
+            keep_prob: {Dropout keep probability}
+        Returns: 
+            self: {Initialized ResNet model}
+        Processing Logic:
+            1. Defines the initial parameters like input channels, use of SE, etc.
+            2. Calls _make_layer to create each layer of the ResNet 
+            3. Adds average pooling and dropout
+            4. Initializes weights
+            5. Adds a linear classifier if num_classes is specified
+        """
         if vocab is not None:
             assert opt is not None
 
@@ -142,6 +249,24 @@ class ResNet(nn.Module):
             self.classifier = nn.Linear(640, self.num_classes, bias=opt.linear_bias)
 
     def _make_layer(self, block, n_block, planes, stride=1, drop_rate=0.0, drop_block=False, block_size=1):
+        """
+        Creates a layer by stacking blocks
+        Args:
+            block: {Block class to use} 
+            n_block: {Number of blocks to return}
+            planes: {Number of output channels (feature maps)} 
+            stride: {Stride of the first block. All others will have stride=1}
+            drop_rate: {Dropout rate}
+            drop_block: {Use DropBlock instead of Dropout}
+            block_size: {Size of each DropBlock if using DropBlock}
+        Returns:
+            Sequential: {Sequentially stacked blocks}
+        Processing Logic:
+            - Creates downsample if needed
+            - Adds first block with specified stride
+            - Adds remaining blocks with stride=1
+            - Returns stacked blocks in Sequential
+        """
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
@@ -170,6 +295,22 @@ class ResNet(nn.Module):
 
 
     def forward(self, x, is_feat=False, get_alphas=False):
+        """
+        Forward pass through the network.
+        Args:
+            x: Input image or feature map
+            is_feat: If True, returns intermediate feature maps
+            get_alphas: If True, returns attention weights
+        Returns: 
+            Output of the network or intermediate feature maps:
+                - If is_feat is True, returns list of intermediate feature maps
+                - If is_feat is False, returns output of the network
+        Processing Logic:
+            - Passes input through 4 convolutional layers
+            - Optionally applies average pooling
+            - Flattens output and passes through classifier 
+            - Optionally returns attention weights from classifier
+        """
         x = self.layer1(x)
         f0 = x
         x = self.layer2(x)
@@ -194,6 +335,18 @@ class ResNet(nn.Module):
             return x
 
     def _get_base_weights(self):
+        """
+        Gets the base weights of the classifier.
+        Args:
+            self: The classifier object.
+        Returns: 
+            base_weight: The base weight of the classifier.
+            base_bias: The base bias of the classifier or None.
+        Processing Logic:
+        - Detach and clone the weight and bias of the classifier to get the base weights
+        - Set requires_grad to False to prevent tracking history
+        - Return base weight and bias. If bias is None, return base weight and None
+        """
         base_weight = self.classifier.weight.detach().clone().requires_grad_(False)
         if self.classifier.bias is not None:
             base_bias = self.classifier.bias.detach().clone().requires_grad_(False)
@@ -205,6 +358,19 @@ class ResNet(nn.Module):
                                  n,
                                  novel_weight=None,
                                  novel_bias=None):
+        """
+        Augments the base classifier with novel classes
+        Args:
+            n: {Number of novel classes to add}
+            novel_weight: {Weight matrix for novel classes} 
+            novel_bias: {Bias vector for novel classes}
+        Returns: 
+            None: {Does not return anything, augments classifier in-place}
+        Processing Logic:
+            - Creates classifier weights for novel classes if not provided
+            - Concatenates base and novel weights/biases
+            - Sets augmented weights/biases as classifier parameters
+        """
 
         # Create classifier weights for novel classes.
         base_device = self.classifier.weight.device
@@ -229,12 +395,34 @@ class ResNet(nn.Module):
 
 
     def regloss(self, lmbd, base_weight, base_bias=None):
+        """Calculates the regularization loss between the current model and a base model
+        Args:
+            lmbd: Regularization hyperparameter
+            base_weight: Weight matrix of base model 
+            base_bias: Bias vector of base model (optional)
+        Returns: 
+            reg: Regularization loss value
+        - Calculates L2 norm between current and base weights
+        - If bias is provided, adds L2 norm between current and base biases
+        - Returns total regularization loss"""
         reg = lmbd * torch.norm(self.classifier.weight[:base_weight.size(0),:] - base_weight)
         if base_bias is not None:
             reg += lmbd * torch.norm(self.classifier.bias[:base_weight.size(0)] - base_bias)**2
         return reg
     
     def reglossnovel(self, lmbd, novel_weight, novel_bias=None):
+        """
+        Calculates the regularization loss for novel classes
+        Args:
+            lmbd: Regularization coefficient
+            novel_weight: Novel class weights 
+            novel_bias: Novel class biases (optional)
+        Returns: 
+            reg: Regularization loss
+        - Calculates regularization loss between novel class weights/biases and classifier weights/biases
+        - Adds L2 norm of weight and bias differences  
+        - Returns total regularization loss
+        """
         rng1, rng2 = self.num_classes, self.num_classes + novel_weight.size(0)
         reg = lmbd * torch.norm(self.classifier.weight[rng1:rng2, :] - novel_weight) #**2??
         if novel_bias is not None:
@@ -247,6 +435,23 @@ class BasicBlock(nn.Module):
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, drop_rate=0.0, drop_block=False,
                  block_size=1, use_se=False):
+        """
+        Initializes a BasicBlock module
+        Args:
+            inplanes: {Number of input channels} 
+            planes: {Number of output channels}
+            stride: {Stride of the convolution}
+            downsample: {Downsampling layer}
+        Returns: 
+            self: {BasicBlock module}
+        Processing Logic:
+            - Apply 3x3 convolution with batch normalization and ReLU on input
+            - Apply 3x3 convolution with batch normalization 
+            - Apply 3x3 convolution with batch normalization
+            - Apply max pooling if stride > 1
+            - Apply downsampling if provided
+            - Initialize attributes like stride, drop rate etc.
+        """
         super(BasicBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes)
         self.bn1 = nn.BatchNorm2d(planes)
@@ -268,6 +473,19 @@ class BasicBlock(nn.Module):
             self.se = SELayer(planes, 4)
 
     def forward(self, x):
+        """
+        Performs forward pass of ResNet block.
+        Args:
+            x: {Input tensor}: Input tensor of shape (batch_size, channels, height, width)  
+        Returns:
+            out: {Output tensor}: Output tensor of same shape as input
+        Processing Logic:
+            - Computes residual as input tensor
+            - Passes input through convolution, batch normalization and ReLU layers
+            - Adds residual to output
+            - Applies ReLU and max pooling
+            - Optionally applies dropout
+        """
         self.num_batches_tracked += 1
 
         residual = x
@@ -304,6 +522,14 @@ class BasicBlock(nn.Module):
 
 class DropBlock(nn.Module):
     def __init__(self, block_size):
+        """
+        Initializes DropBlock regularization layer
+        Args:
+            block_size: Size of block to drop in pixels
+        Returns: 
+            None: Does not return anything
+        - Sets block size attribute from input
+        - Calls parent class' init method"""
         super(DropBlock, self).__init__()
 
         self.block_size = block_size
@@ -311,6 +537,20 @@ class DropBlock(nn.Module):
         #self.bernouli = Bernoulli(gamma)
 
     def forward(self, x, gamma):
+        """
+        Forward pass of the network
+        Args:
+            x: Input tensor of shape (bsize, channels, height, width) 
+            gamma: Dropout probability
+        Returns: 
+            Output: Output tensor after applying dropout
+        Processing Logic:
+            - Sample Bernoulli random variable with probability gamma
+            - Generate mask of same shape as input by thresholding samples
+            - Compute block mask by applying max pooling on mask
+            - Elementwise multiply input with block mask 
+            - Scale output to preserve expected value
+        """
         # shape: (bsize, channels, height, width)
 
         if self.training:
@@ -327,6 +567,21 @@ class DropBlock(nn.Module):
             return x
 
     def _compute_block_mask(self, mask):
+        """
+        Computes block mask from input mask
+        Args: 
+            mask: Mask tensor to compute block mask from
+        Returns: 
+            block_mask: Block masked version of input mask
+        Processing Logic:
+            - Calculate left and right padding for blocks
+            - Get non-zero indices from mask
+            - Generate offsets tensor for blocks
+            - Repeat non-zero indices and offsets for number of blocks
+            - Add offsets to non-zero indices to get block indices
+            - Pad input mask and set block region values to 1
+            - Return 1 - padded mask as the block mask
+        """
         left_padding = int((self.block_size-1) / 2)
         right_padding = int(self.block_size / 2)
 

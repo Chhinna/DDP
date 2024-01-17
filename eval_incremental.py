@@ -27,6 +27,20 @@ import os
 #os.environ['CUDA_VISIBLE_DEVICS'] = '0'
 
 def main():
+    """Parses command line options and initializes test environment
+    Args: 
+        opt: Parsed command line arguments
+    Returns: 
+        None: Initializes test environment based on arguments
+    Processing Logic:
+        1. Adds git commit hash to arguments
+        2. Sets random seeds
+        3. Prints arguments
+        4. Initializes data loaders for base and novel classes
+        5. Loads pretrained model
+        6. Initializes evaluation criteria
+        7. Runs evaluation on novel classes
+    """
 
     opt = parse_option_eval()
 
