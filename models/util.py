@@ -5,6 +5,22 @@ import numpy as np
 import pandas as pd
 
 def create_model(name, n_cls, opt, vocab=None, dataset='miniImageNet'):
+    """
+    Creates a model based on name and parameters
+    Args:
+        name: String - Name of model architecture
+        n_cls: Int - Number of classes 
+        opt: Object - Optimizer parameters
+        vocab: List - Vocabulary (default: None)
+        dataset: String - Dataset name (default: 'miniImageNet')
+    Returns: 
+        model: Object - Model object
+    Creates model by:
+        1. Checking dataset and selecting appropriate model initialization
+        2. Loading model architecture from model_dict based on name
+        3. Setting number of classes and other parameters
+        4. Raising error if model/dataset combination not supported
+    """
     from . import model_dict
     """create model by name"""
     if dataset == 'miniImageNet' or dataset == 'tieredImageNet':
