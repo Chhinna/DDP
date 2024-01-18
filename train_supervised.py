@@ -115,7 +115,8 @@ def main():
         loss = loss*lamda 
         return loss  
     """
- 
+    
+    
     from torch.autograd import Variable
     
     from collections import defaultdict
@@ -297,7 +298,7 @@ def main():
                 n_cls = 60
     
     lang_puller = None
-    if opt.classifier in {"lang-linear", "description-linear"} or opt.label_pull is not None:
+    if opt.classifier in ["lang-linear", "description-linear"] or opt.label_pull is not None:
         # Save full dataset vocab if not available
         vocab_train = [name for name in train_loader.dataset.label2human if name != '']
 #         vocab_test = [name for name in meta_testloader.dataset.label2human if name != '']
@@ -364,7 +365,9 @@ def main():
         def hook(model, input, output):
             activation[name] = output.detach()
         return hook
-    keys = [name for (name, value) in model.named_parameters()]
+    keys = []
+    for name, value in model.named_parameters():
+        keys.append(name)
     """
     for name, layer in model.named_modules():
         print(name, layer)
