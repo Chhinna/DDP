@@ -41,6 +41,18 @@ import datetime
 # wandb.init(project="rfs")
 
 def main():
+    """Calculates the CLIP loss between image features and text embeddings
+    Args:
+        image_features: Tensor of shape (batch_size, feature_dim) containing image features
+        true_labels: Tensor of shape (batch_size) containing true class labels
+    Returns: 
+        loss: Scalar tensor containing the CLIP loss
+    Processing Logic:
+        1. Normalize image features 
+        2. Extract text embeddings for true labels
+        3. Calculate cosine similarity between image features and text embeddings
+        4. Return average cosine similarity as loss
+    """
     opt = parse_option_supervised()
     # dataloader
 #     train_partition = 'trainval' if opt.use_trainval else 'train'
