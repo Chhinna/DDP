@@ -68,11 +68,8 @@ def main():
             # forward + backward + optimize
             pred = learner(s_inputs)
             #pred = learner(s_inputs, step)
-            new_labels = []
+            new_labels = [int(i) for i in s_labels]
             #print(s_labels)
-            for i in s_labels:
-                #print(i)
-                new_labels.append(int(i))
             torch_new_labels = torch.LongTensor(new_labels)
             torch_new_labels = torch_new_labels.to(device)
             support_loss = inner_criterion(pred, torch_new_labels)
@@ -83,9 +80,7 @@ def main():
         # Evaluate the adapted model on the query set
         q_pred = learner(q_inputs)
         #q_pred = learner(q_inputs, step)
-        q_new_labels = []
-        for i in q_labels:
-            q_new_labels.append(int(i))
+        q_new_labels = [int(i) for i in q_labels]
         torch_q_new_labels = torch.LongTensor(q_new_labels)
         torch_q_new_labels = torch_q_new_labels.to(device)
         query_loss = inner_criterion(q_pred, torch_q_new_labels)
