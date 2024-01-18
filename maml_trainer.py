@@ -36,6 +36,34 @@ import datetime
 import learn2learn as l2l
 
 def main():
+    """Calculates accuracy between predictions and targets
+    Args:
+        predictions: Predictions from the model
+        targets: True target values  
+    Returns: 
+        accuracy: Accuracy between predictions and targets
+    Processing Logic:
+        1. Get predictions in one-hot format to match targets
+        2. Calculate number of correct predictions
+        3. Divide correct by total number of examples to get accuracy
+    """
+    
+    """
+    Trains model for one iteration
+    Args: 
+        data: Batch of support and query data
+        target_here: Batch of support and query labels
+        learner: Model to train
+        epoch: Current training epoch
+    Returns:
+        query_loss: Loss on query set
+        acc: Accuracy on query set
+    Processing Logic:
+        1. Separate batch into support and query 
+        2. Train model on support set for 3 steps
+        3. Evaluate model on query set
+        4. Return loss and accuracy
+    """
     def accuracy(predictions, targets):
         predictions = predictions.argmax(dim=1).view(targets.shape)
         return (predictions == targets).sum().float() / targets.size(0)
