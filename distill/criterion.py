@@ -15,14 +15,6 @@ from .NCECriterion import NCECriterion
 class DistillKL(nn.Module):
     """KL divergence for distillation"""
     def __init__(self, T):
-        """
-        Initialize DistillKL class
-        Args:
-            T: Temperature for distillation
-        Returns: 
-            None: Does not return anything
-        - Store temperature T as attribute
-        - Call parent class initializer"""
         super(DistillKL, self).__init__()
         self.T = T
 
