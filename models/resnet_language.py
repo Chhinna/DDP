@@ -37,9 +37,7 @@ class LangPuller(nn.Module):
                                      "{0}_dim{1}_base_synonyms.pickle".format(opt.dataset, dim)) # TOdo
             with open(embed_pth, "rb") as openfile:
                 label_syn_embeds = pickle.load(openfile)
-            base_embeds = []
-            for base_label in vocab_base:
-                base_embeds.append(label_syn_embeds[base_label])
+            base_embeds = [label_syn_embeds[base_label] for base_label in vocab_base]
         else:
             embed_pth = os.path.join(opt.word_embed_path,
                                      "{0}_dim{1}.pickle".format(opt.dataset, dim)) # TODO
@@ -80,11 +78,9 @@ class LangPuller(nn.Module):
                 scores.fill_diagonal_(-9999)
             scores = self.softmax(scores / self.temp)
             return scores @ base_weight # 5 x 640 for fine-tuning.
-        else:
-            # Linear Mapping:
-            with torch.no_grad():
-                inspired = self.mapping_model(self.novel_embeds)
-            return inspired
+        with torch.no_grad():
+            inspired = self.mapping_model(self.novel_embeds)
+        return inspired
 
     @staticmethod
     def loss1(pull, inspired, weights):
@@ -190,16 +186,14 @@ class ResNet(nn.Module):
 
         if is_feat:
             return [f0, f1, f2, f3, feat], x
-        else:
-            return x
+        return x
 
     def _get_base_weights(self):
         base_weight = self.classifier.weight.detach().clone().requires_grad_(False)
         if self.classifier.bias is not None:
             base_bias = self.classifier.bias.detach().clone().requires_grad_(False)
             return base_weight, base_bias
-        else:
-            return base_weight, None
+        return base_weight, None
 
     def augment_base_classifier_(self,
                                  n,
@@ -292,7 +286,7 @@ class BasicBlock(nn.Module):
         out = self.maxpool(out)
 
         if self.drop_rate > 0:
-            if self.drop_block == True:
+            if self.drop_block is True:
                 feat_size = out.size()[2]
                 keep_rate = max(1.0 - self.drop_rate / (20*2000) * (self.num_batches_tracked), 1.0 - self.drop_rate)
                 gamma = (1 - keep_rate) / self.block_size**2 * feat_size**2 / (feat_size - self.block_size + 1)**2
@@ -323,8 +317,7 @@ class DropBlock(nn.Module):
             count_ones = block_mask.sum()
 
             return block_mask * x * (countM / count_ones)
-        else:
-            return x
+        return x
 
     def _compute_block_mask(self, mask):
         left_padding = int((self.block_size-1) / 2)
@@ -382,11 +375,13 @@ class SELayer(nn.Module):
             if self.transform_query_size is not None:
                 q = x @ self.transform_W_query
                 logits = q @ torch.transpose((self.embed @ self.transform_W_key),0,1) # Bxnum_classes key values
-                c = self.softmax(logits) @ (self.embed @ self.transform_W_value)  # B x cdim context vector (or transform_query_size if provided)
+                  # B x cdim context vector (or transform_query_size if provided)
             else:
                 logits = x @ torch.transpose((self.embed @ self.transform_W_key),0,1) # Bxnum_classes key values
-                c = self.softmax(logits) @ (self.embed @ self.transform_W_value)  # B x cdim context vector (or transform_query_size if provided)
+                  # B x cdim context vector (or transform_query_size if provided)
 
+
+            c = self.softmax(logits) @ (self.embed @ self.transform_W_value)
             if self.attention == "sum":
                 x = self.dropout(x) + c
             elif self.attention == "concat":
