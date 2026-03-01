@@ -68,39 +68,39 @@ def create_and_save_embeds(opt, vocab):
     if os.path.exists(embed_pth):
         print("Found {}.".format(embed_pth))
         return
-    else:
-        print("Loading dictionary...")
-        print(words)
-        """
-        from torchnlp.word_to_vector import Vico
-        pretrained_embedding = Vico(name='linear',
-                                    dim=dim,
-                                    is_include=lambda w: w in set(words))
 
-        embeds = []
-        keys = pretrained_embedding.token_to_index.keys()
-        for w in keys:
-            embeds.append(pretrained_embedding[w].numpy())
-        d = dict(zip(keys, embeds))
+    print("Loading dictionary...")
+    print(words)
+    """
+    from torchnlp.word_to_vector import Vico
+    pretrained_embedding = Vico(name='linear',
+                                dim=dim,
+                                is_include=lambda w: w in set(words))
 
-        # Pickle the dictionary for later load
-        print("Pickling word embeddings...")
-        with open(embed_pth, 'wb') as f:
-            pickle.dump(d, f)
-        print("Pickled.")
-        """
-        import torchtext
-        glove = torchtext.vocab.GloVe(name='6B', dim=500)
-        embeds = []
-        words = list(set(words))
-        for w in words:
-            embeds.append(glove.vectors[glove.stoi[w]])
-        d = dict(zip(words, embeds))
-        print("Pickling word embeddings...")
-        with open(embed_pth, 'wb') as f:
-            pickle.dump(d, f)
-        print("Pickled.")
-        print(embed_pth)
+    embeds = []
+    keys = pretrained_embedding.token_to_index.keys()
+    for w in keys:
+        embeds.append(pretrained_embedding[w].numpy())
+    d = dict(zip(keys, embeds))
+
+    # Pickle the dictionary for later load
+    print("Pickling word embeddings...")
+    with open(embed_pth, 'wb') as f:
+        pickle.dump(d, f)
+    print("Pickled.")
+    """
+    import torchtext
+    glove = torchtext.vocab.GloVe(name='6B', dim=500)
+    embeds = []
+    words = list(set(words))
+    for w in words:
+        embeds.append(glove.vectors[glove.stoi[w]])
+    d = dict(zip(words, embeds))
+    print("Pickling word embeddings...")
+    with open(embed_pth, 'wb') as f:
+        pickle.dump(d, f)
+    print("Pickled.")
+    print(embed_pth)
 
 
 
@@ -117,34 +117,34 @@ def create_and_save_descriptions(opt, vocab):
 
     if os.path.exists(embed_pth):
         return
-    else:
-        print("Path {} not found.".format(embed_pth))
-        with torch.no_grad():
-            print("Creating tokenizer...")
-            from transformers import AutoTokenizer, AutoModelForMaskedLM
-            tokenizer = AutoTokenizer.from_pretrained(opt.desc_embed_model)
-            print("Initializing {}...".format(opt.desc_embed_model))
-            model = AutoModelForMaskedLM.from_pretrained(opt.desc_embed_model, output_hidden_states=True)
 
-            # Create wordnet
-            from nltk.corpus import wordnet
-            defs = [wordnet.synsets(v.replace(" ", "_"))[0].definition() for v in vocab]
-    #         defs = torch.cat(defs, 0)
-            embeds = []
-            for i,d in enumerate(defs):
-                inp = vocab[i]+" "+d if opt.prefix_label else d
-                inp = tokenizer(inp, return_tensors="pt")
-                outputs = model(**inp)
-                hidden_states = outputs[1]
-                embed = torch.mean(hidden_states[opt.transformer_layer], dim=(0,1))
-                embeds.append(embed)
+    print("Path {} not found.".format(embed_pth))
+    with torch.no_grad():
+        print("Creating tokenizer...")
+        from transformers import AutoTokenizer, AutoModelForMaskedLM
+        tokenizer = AutoTokenizer.from_pretrained(opt.desc_embed_model)
+        print("Initializing {}...".format(opt.desc_embed_model))
+        model = AutoModelForMaskedLM.from_pretrained(opt.desc_embed_model, output_hidden_states=True)
 
-            d = dict(zip(vocab, embeds))
-            # Pickle the dictionary for later load
-            print("Pickling description embeddings from {}...".format(opt.desc_embed_model))
-            with open(embed_pth, 'wb') as f:
-                pickle.dump(d, f)
-            print("Pickled.")
+        # Create wordnet
+        from nltk.corpus import wordnet
+        defs = [wordnet.synsets(v.replace(" ", "_"))[0].definition() for v in vocab]
+#         defs = torch.cat(defs, 0)
+        embeds = []
+        for i,d in enumerate(defs):
+            inp = vocab[i]+" "+d if opt.prefix_label else d
+            inp = tokenizer(inp, return_tensors="pt")
+            outputs = model(**inp)
+            hidden_states = outputs[1]
+            embed = torch.mean(hidden_states[opt.transformer_layer], dim=(0,1))
+            embeds.append(embed)
+
+        d = dict(zip(vocab, embeds))
+        # Pickle the dictionary for later load
+        print("Pickling description embeddings from {}...".format(opt.desc_embed_model))
+        with open(embed_pth, 'wb') as f:
+            pickle.dump(d, f)
+        print("Pickled.")
 
 def restricted_float(x):
     try:
