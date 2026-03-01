@@ -21,6 +21,18 @@ class LabelSmoothing(nn.Module):
         self.smoothing = smoothing
 
     def forward(self, x, target):
+        """
+        Calculate loss for model prediction against target.
+        Args:
+            x: Input tensor: Model predictions before softmax
+            target: Target tensor: Correct class labels
+        Returns: 
+            loss: Loss tensor: Average loss over batch
+        - Apply softmax to get normalized class probabilities from logits
+        - Calculate negative log likelihood loss between probabilities and targets
+        - Calculate smoothing loss as negative log probability of all classes averaged  
+        - Return weighted sum of NLL and smoothing losses averaged over batch
+        """
         logprobs = torch.nn.functional.log_softmax(x, dim=-1)
 
         nll_loss = -logprobs.gather(dim=-1, index=target.unsqueeze(1))
@@ -31,6 +43,21 @@ class LabelSmoothing(nn.Module):
 
 class BCEWithLogitsLoss(nn.Module):
     def __init__(self, weight=None, size_average=None, reduce=None, reduction='mean', pos_weight=None, num_classes=64):
+        """
+        Initialize BCEWithLogitsLoss loss function
+        Args:
+            weight: Weights to apply to loss of each class
+            size_average: Normalize loss by the batch size
+            reduce: Reduce loss over samples/batches or not 
+            reduction: Type of loss reduction ('mean' or 'sum')
+            pos_weight: Weight of positive examples relative to negative examples
+            num_classes: Number of classes
+        Returns: 
+            loss: Calculated loss value
+        - The loss function is initialized as nn.BCEWithLogitsLoss with the given parameters
+        - BCEWithLogitsLoss calculates Binary Cross Entropy loss between logits and targets
+        - The loss is averaged/summed based on reduction parameter
+        """
         super(BCEWithLogitsLoss, self).__init__()
         self.num_classes = num_classes
         self.criterion = nn.BCEWithLogitsLoss(weight=weight,
@@ -39,6 +66,15 @@ class BCEWithLogitsLoss(nn.Module):
                                               reduction=reduction,
                                               pos_weight=pos_weight)
     def forward(self, input, target):
+        """Computes the loss between input and target
+        Args:
+            input: Input tensor 
+            target: Target tensor 
+        Returns: 
+            loss: Loss value computed from input and target
+        Computes one-hot encoding of target. 
+        Computes loss between input and one-hot encoded target using self.criterion.
+        Returns the loss value."""
         target_onehot = F.one_hot(target, num_classes=self.num_classes)
         return self.criterion(input, target_onehot)
 
@@ -51,6 +87,21 @@ def adjust_learning_rate(epoch, opt, optimizer):
             param_group['lr'] = new_lr
 
 def create_and_save_embeds(opt, vocab):
+    """
+    Creates and saves word embeddings
+    Args: 
+        opt: Options class containing parameters
+        vocab: Vocabulary containing words
+    Returns: 
+        None: Does not return anything, saves embeddings to file
+    Processing Logic:
+        - Checks if embedding path exists, if not creates it
+        - Gets list of all words from vocab
+        - Checks if embedding file already exists, if so loads it
+        - If not, loads GloVe embeddings for words
+        - Zips words and embeddings into dictionary
+        - Pickles and saves dictionary to file
+    """
 
     word_embeds = opt.word_embed_path
     dim = opt.word_embed_size
@@ -105,6 +156,23 @@ def create_and_save_embeds(opt, vocab):
 
 
 def create_and_save_descriptions(opt, vocab):
+    """
+    Create and save description embeddings
+    Args: 
+        opt: Options object containing parameters
+        vocab: List of vocabulary words
+    Returns: 
+        None: Description embeddings are pickled to file
+    Processing Logic:
+        - Check if output directory exists, create if not
+        - Construct path for pickled embeddings file
+        - Check if file already exists, if so return
+        - Initialize tokenizer and model from transformers
+        - Get definitions for each vocab word from WordNet 
+        - Generate embeddings for each definition using transformer model
+        - Average embeddings over specified transformer layer
+        - Save dictionary of vocab words to embeddings in pickled file
+    """
 
     if not os.path.isdir(opt.description_embed_path):
         os.makedirs(opt.description_embed_path)
@@ -147,6 +215,16 @@ def create_and_save_descriptions(opt, vocab):
             print("Pickled.")
 
 def restricted_float(x):
+    """Restricts a float to the range [0.0, 1.0]
+    Args: 
+        x: The value to convert to a float and check
+    Returns: 
+        x: The float restricted to the range [0.0, 1.0]
+    Processing Logic:
+    - Converts the input to a float
+    - Checks if the float is in the range [0.0, 1.0]
+    - Raises an error if not in range
+    - Returns the float if it is in range"""
     try:
         x = float(x)
     except ValueError:
