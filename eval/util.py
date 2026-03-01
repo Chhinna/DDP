@@ -64,7 +64,7 @@ def freeze_backbone_weights(backbone, opt, epoch, exclude=['classifier.transform
         print("Freezing the backbone.")
         for name, param in backbone.named_parameters():
             param.requires_grad = False
-            if any(map(lambda s: name.startswith(s), exclude)): # why not; name in exclude:
+            if any((name.startswith(s) for s in exclude)): # why not; name in exclude:
                 print("Not frozen: ", name)
                 param.requires_grad = True
 

@@ -7,7 +7,7 @@ import pandas as pd
 def create_model(name, n_cls, opt, vocab=None, dataset='miniImageNet'):
     from . import model_dict
     """create model by name"""
-    if dataset == 'miniImageNet' or dataset == 'tieredImageNet':
+    if dataset in {'miniImageNet', 'tieredImageNet'}:
         if name.endswith('v2') or name.endswith('v3'):
             model = model_dict[name](num_classes=n_cls)
         elif name.startswith('resnet50'):
@@ -23,7 +23,7 @@ def create_model(name, n_cls, opt, vocab=None, dataset='miniImageNet'):
             model = model_dict[name](num_classes=n_cls)
         else:
             raise NotImplementedError('model {} not supported in dataset {}:'.format(name, dataset))
-    elif dataset == 'CIFAR-FS' or dataset == 'FC100' or dataset == 'CUB_200_2011':
+    elif dataset in {'CIFAR-FS', 'FC100', 'CUB_200_2011'}:
         if name.startswith('resnet') or name.startswith('seresnet'):
             model = model_dict[name](avg_pool=True, drop_rate=0.1, dropblock_size=2, num_classes=n_cls, vocab=vocab, opt=opt)
         elif name.startswith('convnet'):
@@ -41,11 +41,10 @@ def get_teacher_name(model_path):
     segments = model_path.split('/')[-2].split('_')
     if ':' in segments[0]:
         return segments[0].split(':')[-1]
-    else:
-        if segments[0] != 'wrn':
-            return segments[0]
-        else:
-            return segments[0] + '_' + segments[1] + '_' + segments[2]
+
+    if segments[0] != 'wrn':
+        return segments[0]
+    return segments[0] + '_' + segments[1] + '_' + segments[2]
         
 
 def get_embeds(embed_pth, vocab, dim=500):
