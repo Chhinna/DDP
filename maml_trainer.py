@@ -36,6 +36,17 @@ import datetime
 import learn2learn as l2l
 
 def main():
+    """Calculates accuracy between predictions and targets
+    Args:
+        predictions: Predictions from the model
+        targets: True target values  
+    Returns: 
+        accuracy: Accuracy between predictions and targets
+    Processing Logic:
+        1. Get predictions in one-hot format to match targets
+        2. Calculate number of correct predictions 
+        3. Divide correct by total number of examples to get accuracy
+    """
     def accuracy(predictions, targets):
         predictions = predictions.argmax(dim=1).view(targets.shape)
         return (predictions == targets).sum().float() / targets.size(0)

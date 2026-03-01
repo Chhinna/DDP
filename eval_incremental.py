@@ -27,6 +27,19 @@ import os
 #os.environ['CUDA_VISIBLE_DEVICS'] = '0'
 
 def main():
+    """Parses command line options and initializes data loaders and model for evaluation.
+    Args: 
+        opt: Parsed training options
+    Returns: 
+        base: Accuracy on base classes
+        novel: Accuracy on novel classes
+    Processing Logic:
+        1. Parse command line options
+        2. Initialize data loaders for base and novel classes
+        3. Load pretrained model weights
+        4. Evaluate model on novel and base classes
+        5. Return accuracies on base and novel classes
+    """
 
     opt = parse_option_eval()
 
