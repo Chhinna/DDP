@@ -5,6 +5,22 @@ import numpy as np
 import pandas as pd
 
 def create_model(name, n_cls, opt, vocab=None, dataset='miniImageNet'):
+    """
+    Creates a model
+    Args:
+        name: String - Name of the model
+        n_cls: Int - Number of classes 
+        opt: Object - Optimizer options
+        vocab: List - Vocabulary (optional)
+        dataset: String - Name of the dataset
+    Returns: 
+        model: Object - Model object
+    Processing Logic:
+        - Imports model dictionary
+        - Checks dataset and selects appropriate model
+        - Handles model name variations
+        - Raises error if model/dataset not supported
+    """
     from . import model_dict
     """create model by name"""
     if dataset == 'miniImageNet' or dataset == 'tieredImageNet':
