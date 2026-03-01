@@ -19,11 +19,31 @@ EPOCHS = 1000
 
 
 def load_pickle(pth):
+    """
+    Loads pickled data from a file path
+    Args:
+        pth: Path to pickle file
+    Returns: 
+        d: Loaded pickled data
+    - Opens the file at the given path for reading in binary mode
+    - Loads the pickled data from the file using pickle.load()
+    - Returns the loaded data
+    """
     with open(pth, 'rb') as f:
         d = pickle.load(f)
     return d
 
 def get_base_labels(pth):
+    """
+    Load labels from pickle file
+    Args:
+        pth: Path to pickle file
+    Returns:
+        ls: List of labels
+    - Load dictionary from pickle file at given path
+    - Initialize empty list with same length as dictionary 
+    - Iterate through dictionary and add values to list at corresponding keys
+    - Return the list of labels"""
     d = load_pickle(pth)
     ls = [""]*len(d)
     for k,v in d.items():
@@ -31,14 +51,52 @@ def get_base_labels(pth):
     return ls
 
 def get_classifier_weights(pth, device):
+    """Get weights of classifier from a PyTorch checkpoint file
+    Args:
+        pth: Path to PyTorch checkpoint file
+        device: Device to load checkpoint weights onto  
+    Returns: 
+        weights: Weights of classifier layer from checkpoint
+    - Load checkpoint file onto given device
+    - Return entire checkpoint dictionary and classifier weights  
+    - Classifier weights extracted from 'model.classifier.weight' key"""
     ckpt = torch.load(pth, map_location=device)
     return ckpt, ckpt['model']['classifier.weight']
 
 def save_model(ckpt, model, nickname, save_path):
+    """
+    Saves a model state dict to a checkpoint file
+    Args:
+        ckpt: Checkpoint dictionary to save model state dict
+        model: Model to extract state dict from 
+        nickname: Name to assign the model state dict in the checkpoint
+        save_path: Path to save the checkpoint file
+    Returns: 
+        None: Function returns nothing
+    - Extract model state dict from provided model
+    - Add model state dict to checkpoint dictionary under provided nickname
+    - Save checkpoint dictionary to file at provided save_path
+    """
     ckpt[nickname] = model.state_dict()
     torch.save(ckpt, save_path)
 
 def main(MODEL_HOME, MODEL_PATH, SAVE_PATH):
+    """
+    Trains a linear mapping model between label embeddings and image embeddings.
+    
+    Args:
+        MODEL_HOME: Path to model home directory
+        MODEL_PATH: Path to pretrained image classifier model
+        SAVE_PATH: Path to save trained linear mapping model
+    Returns: 
+        None: Does not return anything, saves model
+    
+    Processes:
+    - Loads pretrained image classifier weights and label embeddings
+    - Initializes linear mapping model 
+    - Trains model via SGD with MSE loss for several epochs
+    - Saves trained linear mapping model
+    """
     
     ckpt, base_embeds = get_classifier_weights(MODEL_PATH, DEVICE) #Tensor
     base_labels = [name for name in ckpt['label2human'] if name != ''] 
