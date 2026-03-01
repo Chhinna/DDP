@@ -9,15 +9,41 @@ import scipy
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self):
+        """
+        Initialize the object
+        Args:
+            self: The object
+        Returns:
+            None: Nothing is returned
+        - Reset the internal state of the object by calling self.reset()
+        """
         self.reset()
 
     def reset(self):
+        """Resets the statistics tracker to initial values.
+        Args:
+            self: The statistics tracker object. 
+        Returns: 
+            None: Does not return anything.
+        - Sets the value being tracked (val) to 0
+        - Sets the running average (avg) to 0 
+        - Sets the running sum (sum) to 0
+        - Sets the sample count (count) to 0"""
         self.val = 0
         self.avg = 0
         self.sum = 0
         self.count = 0
 
     def update(self, val, n=1):
+        """Updates the running statistics
+        Args:
+            val: New value to include in the statistics
+            n: Number of samples (default is 1) 
+        Returns: 
+            None: Does not return anything
+        - Adds the new value to the running sum
+        - Increases the sample count by n
+        - Recomputes the running average from the new sum and count"""
         self.val = val
         self.sum += val * n
         self.count += n
@@ -40,6 +66,16 @@ def accuracy(output, target, topk=(1,)):
         return res
 
 def mean_confidence_interval(data, confidence=0.95):
+    """
+    Calculate a mean confidence interval from data
+    Args:
+        data: Data to calculate mean confidence interval for
+        confidence: Confidence level for interval in decimal format (default 0.95)
+    Returns: 
+        m, h: Mean and half-width of confidence interval
+    - Calculate mean (m) and standard error (se) of data
+    - Use student's t-distribution to calculate half-width (h) based on confidence level
+    - Return mean and half-width to define confidence interval as m ± h"""
     a = 1.0 * np.array(data)
     n = len(a)
     m, se = np.mean(a), scipy.stats.sem(a)
@@ -47,10 +83,32 @@ def mean_confidence_interval(data, confidence=0.95):
     return m, h
 
 def normalize(x):
+    """Normalizes a tensor
+    Args: 
+        x: Tensor to normalize
+    Returns: 
+        Tensor: Normalized tensor
+    - Squares each element of the input tensor x
+    - Sums the squared elements along dimension 1, keeping other dimensions the same size 
+    - Takes the square root of the sum to calculate the norm
+    - Divides each element of the input tensor by the calculated norm to normalize the tensor"""
     norm = x.pow(2).sum(1, keepdim=True).pow(1. / 2)
     return x.div(norm)
 
 def image_formatter(im):
+    """
+    Formats image for display in HTML
+    Args:
+        im: Image to format in one line
+    Returns: 
+        String: Formatted image string in one line
+    Processing Logic:
+        - Normalize image pixels to range 0-255
+        - Transpose image dimensions for PIL
+        - Save image to bytes buffer
+        - Encode bytes to base64 string
+        - Return HTML image tag with base64 data URI
+    """
     im = ((im / np.max(im, axis=(1,2), keepdims=True)) * 255).astype('uint8').transpose((1,2,0))
     im = Image.fromarray(im)
     rawBytes = io.BytesIO()
@@ -60,6 +118,19 @@ def image_formatter(im):
     return f'<img src="data:image/jpeg;base64,{decoded}">'
 
 def freeze_backbone_weights(backbone, opt, epoch, exclude=['classifier.transform']):
+    """
+    Freeze backbone weights at a given epoch
+    Args:
+        backbone: Backbone model
+        opt: Training options
+        epoch: Current epoch number
+    Returns: 
+        None: No return value
+    Freeze backbone weights at opt.freeze_backbone_at epoch:
+        - Check if current epoch matches opt.freeze_backbone_at
+        - Set requires_grad=False for all backbone parameters
+        - Exclude parameters starting with strings in exclude list
+        - Print excluded parameters"""
     if opt.freeze_backbone_at == epoch:
         print("Freezing the backbone.")
         for name, param in backbone.named_parameters():
@@ -90,6 +161,16 @@ def Cosine(support, support_ys, query):
     return pred
 
 def get_optim(net, opt):
+    """Initializes an optimizer for the network.
+    Args:
+        net: Network to optimize
+        opt: Optimizer options
+    Returns: 
+        optimizer: Initialized optimizer
+    - Checks if Adam optimizer requested
+    - If yes, initializes Adam optimizer on network parameters
+    - If no, initializes SGD optimizer on network parameters
+    - Returns the initialized optimizer"""
     if opt.adam:
         optimizer = torch.optim.Adam(net.parameters(),
                                      lr=opt.learning_rate,
@@ -102,6 +183,16 @@ def get_optim(net, opt):
     return optimizer
 
 def get_vocab(loaders):
+    """Get vocabularies from multiple loaders
+    Args: 
+        loaders: Loaders containing datasets with label to human mappings
+    Returns: 
+        vocabs: List of vocabularies extracted from each loader
+    - Iterate through each loader
+    - Extract label to human mapping from each dataset
+    - Filter out empty labels and add remaining to a vocabulary list
+    - Collect vocabularies from each loader into a list
+    - Return the list of vocabularies"""
     vocabs = []
     for loader in loaders:
         label2human = loader.dataset.label2human
@@ -110,6 +201,23 @@ def get_vocab(loaders):
     return vocabs
 
 def get_vocabs(base_loader=None, novel_loader=None, query_ys=None):
+    """
+    Gets vocabularies from base and novel loaders.
+    Args:
+        base_loader: Base loader to get base vocab from
+        novel_loader: Novel loader to get novel vocab from 
+        query_ys: Query labels to get novel vocab from
+    Returns: 
+        vocab_base: Base vocabulary
+        vocab_all: Concatenated base and novel vocabulary
+        vocab_novel: Novel vocabulary
+        orig2id: Mapping from original novel ids to ids in vocab_all
+    Processing Logic:
+        - Extract base vocabulary from base loader if provided
+        - Extract novel vocabulary from novel loader and query_ys if provided 
+        - Concatenate base and novel vocabularies
+        - Return vocabularies and id mapping
+    """
     vocab_all = []
     vocab_base = None
     if base_loader is not None:
@@ -133,6 +241,17 @@ def get_vocabs(base_loader=None, novel_loader=None, query_ys=None):
     return vocab_base, vocab_all, vocab_novel, orig2id
 
 def drop_a_dim(data): #TODO why do we need this in the first place?
+    """
+    Drops a dimension from the input data.
+    Args:
+        data: Tuple of tensors containing support and query data.
+    Returns: 
+        Tuple: Dropped dimension tensors containing support and query data.
+    Processing Logic:
+        - View support and query xs tensors to remove batch dimension
+        - View support and query ys tensors to remove batch dimension
+        - Return tuple of processed tensors
+    """
     support_xs, support_ys, query_xs, query_ys = data
     batch_size, _, height, width, channel = support_xs.size()
     print(support_xs.shape)
@@ -147,6 +266,18 @@ def drop_a_dim(data): #TODO why do we need this in the first place?
     return (support_xs, support_ys, query_xs, query_ys)
 
 def get_batch_cycle(meta_trainloader_it, meta_trainloader):
+    """
+    Gets next batch from dataloader iterator or resets iterator if exhausted
+    Args:
+        meta_trainloader_it: Iterator over dataloader - {Iterator over dataloader}  
+        meta_trainloader: Dataloader - {Dataloader object}
+    Returns: 
+        data: Batch data - {Batch of data from dataloader}
+    Processing Logic:
+        - Try to get next batch from iterator
+        - If iterator is exhausted, reset it to iterator over dataloader
+        - Return batch data
+    """
     try:
         data = next(meta_trainloader_it)
     except StopIteration:
@@ -161,6 +292,23 @@ def log_episode(novel_labels,
                 base_acc,
                 running_base,
                 running_novel):
+    """
+    Logs episode results
+    Args:
+        novel_labels: Novel class labels in one line
+        vocab_novel: Novel vocabulary in one line 
+        epoch: Current epoch number
+        novel_acc: Novel accuracy score
+        base_acc: Base accuracy score
+        running_base: Running average of base accuracy
+        running_novel: Running average of novel accuracy
+    Returns: 
+        None: Does not return anything, just prints the results
+    Processing Logic:
+        - Calculates average of novel and base accuracy
+        - Calculates running average of novel and base accuracies
+        - Prints the results in a formatted string with class labels, vocab, accuracies and averages
+    """
     avg_score = (novel_acc + base_acc) / 2
     running_avg = (running_base + running_novel) / 2
     print('\n{:25} {:}\n'

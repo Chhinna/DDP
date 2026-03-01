@@ -5,6 +5,22 @@ import numpy as np
 import pandas as pd
 
 def create_model(name, n_cls, opt, vocab=None, dataset='miniImageNet'):
+    """
+    Creates a model
+    Args:
+        name: String - Name of the model architecture
+        n_cls: Int - Number of classes in the dataset 
+        opt: Object - Optimizer hyperparameters
+        vocab: List - Vocabulary for embedding models
+        dataset: String - Name of the dataset
+    Returns: 
+        model: Object - PyTorch model
+    Processing Logic:
+        - Imports model dictionary
+        - Checks dataset and selects appropriate model initialization
+        - Handles special cases like ResNet50
+        - Raises error if model/dataset combination not supported
+    """
     from . import model_dict
     """create model by name"""
     if dataset == 'miniImageNet' or dataset == 'tieredImageNet':
