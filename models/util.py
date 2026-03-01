@@ -5,6 +5,21 @@ import numpy as np
 import pandas as pd
 
 def create_model(name, n_cls, opt, vocab=None, dataset='miniImageNet'):
+    """
+    Creates a model based on name and parameters
+    Args:
+        name: String representing model name
+        n_cls: Number of classes for classification head
+        opt: Optimizer
+        vocab: Vocabulary (optional)
+        dataset: Dataset name
+    Returns: 
+        model: PyTorch model
+    Creates model by:
+        1. Checking dataset and selecting appropriate model initialization
+        2. Looking up model in model dictionary
+        3. Initializing model with number of classes and other parameters
+    """
     from . import model_dict
     """create model by name"""
     if dataset == 'miniImageNet' or dataset == 'tieredImageNet':
